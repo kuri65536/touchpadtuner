@@ -27,11 +27,50 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 '''
-from typing import Any
+from typing import Any, List, Optional
 import os
+import subprocess
 
 import tkinter as tk
 from tkinter import Tk, ttk
+
+
+# xinput {{{1
+class XInputDB(object):  # {{{1
+    cmd_shw = "xinput list-props {} | grep '({}):'"
+    cmd_int = "xinput set-int-prop {} {} {} {}"
+    cmd_flt = "xinput {} {} {}"
+    cmd_atm = "xinput {} {} {}"
+
+    def __init__(self):
+        self.dev = 11
+
+    def prop_get(self, key) -> List[str]:  # {{{2
+        cmd = self.cmd_shw.format(self.dev, key)
+        curb = subprocess.check_output(cmd, shell=True)
+        curs = curb.decode("utf-8")
+        seq = curs.split(":")[1].split(",")
+        return seq
+
+    def prop_bool(self, key: int, idx: int,  # {{{2
+                  v: Optional[bool]=None) -> bool:
+        seq = self.prop_get(key)
+        if v is not None:
+            seq[idx] = "1" if v else "0"
+            s = ' '.join(seq)
+            cmd = self.cmd_int.format(self.dev, key, "8", s)
+            subprocess.call(cmd)
+            seq = self.prop_get(key)
+        return seq[idx]
+
+    def vert2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(285, 1, v)
+
+    def horz2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(285, 2, v)
+
+
+xi = XInputDB()
 
 
 # options {{{1
@@ -78,7 +117,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     frm = ttk.Frame(root)
     nb = ttk.Notebook(root)
     page1 = ttk.Frame(nb)
-    nb.add(page1, text="Basic")
+    nb.add(page1, text="Tap/Click")
     page2 = ttk.Frame(nb)
     nb.add(page2, text="Detail")
     page3 = ttk.Frame(nb)
@@ -145,8 +184,40 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     '''
 
     # page1 - basic
+    # Click Action
+    seq = ["Left-Click", "Right-Click", "Middel-Click"]
+    tk.Label(page1, text="Click actions").pack()
+    frm = tk.Frame(page1)
+    frm.pack()
+    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT)
+    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
+    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
+    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+
+    # Tap Action
+    tk.Label(page1, text="Tap actions").pack()
+    frm = tk.Frame(page1)
+    frm.pack()
+    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT)
+    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
+    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
+    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+
+    # Tap Threshold
 
     # page2 - detail
+    xi._vert2fingerscroll = tk.IntVar()
+    xi._horz2fingerscroll = tk.IntVar()
+    xi._vert2fingerscroll.set(1 if xi.vert2fingerscroll() else 0)
+    xi._horz2fingerscroll.set(1 if xi.vert2fingerscroll() else 0)
+    tk.Checkbutton(page2, text="2-Finger Scroll(Vert)",
+                   variable=xi._vert2fingerscroll).pack()
+    tk.Checkbutton(page2, text="2-Finger Scroll(Horz)",
+                   variable=xi._horz2fingerscroll).pack()
 
     # page3 - About (License information)
     tk.Label(page3, text="TouchPad Tuner").pack()
