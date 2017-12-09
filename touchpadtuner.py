@@ -27,7 +27,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 '''
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 import os
 import subprocess
 
@@ -37,10 +37,13 @@ from tkinter import Tk, ttk
 
 # xinput {{{1
 class XInputDB(object):  # {{{1
-    cmd_shw = "xinput list-props {} | grep '({}):'"
-    cmd_int = "xinput set-int-prop {} {} {} {}"
-    cmd_flt = "xinput {} {} {}"
-    cmd_atm = "xinput {} {} {}"
+    cmd_bin = "/usr/bin/xinput"
+    cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
+    cmd_int = cmd_bin + " set-int-prop {} {} {} {}"
+    cmd_flt = cmd_bin + " set-float-prop {} {} {} {}"
+    cmd_atm = cmd_bin + " set-atomt-prop {} {} {} {}"
+
+    cmd_wat = "query-state"
 
     def __init__(self):
         self.dev = 11
@@ -69,6 +72,35 @@ class XInputDB(object):  # {{{1
     def horz2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
         return self.prop_bool(285, 2, v)
 
+    def props(self) -> Tuple[List[bool], List[str]]:  # {{{2
+        cmd = [self.cmd_bin, self.cmd_wat, str(self.dev)]
+        curb = subprocess.check_output(cmd)
+        curs = curb.decode("utf-8")
+
+        _btns = {}  # type: Dict[int, bool]
+        _vals = {}  # type: Dict[int, int]
+        for line in curs.splitlines():
+            line = line.strip()
+            if line.startswith("button"):
+                try:
+                    l, r = line.split("=")
+                    idx = int(line.split("[")[1].split("]")[0]) - 1
+                    _btns[idx] = True if r == "down" else False
+                except:
+                    pass
+                continue
+            if line.startswith("valuator"):
+                try:
+                    l, r = line.split("=")
+                    idx = int(line.split("[")[1].split("]")[0])
+                    _vals[idx] = int(r)
+                except:
+                    pass
+                continue
+        btns = [_btns.get(i, False) for i in range(max(_btns.keys()) + 1)]
+        vals = [_vals.get(i, 0) for i in range(max(_vals.keys()) + 1)]
+        return btns, vals
+
 
 xi = XInputDB()
 
@@ -82,8 +114,25 @@ def options() -> Any:  # {{{1
 
 
 # gui {{{1
+class Gui(object):  # {{{1
+    def callback_idle(self):  # {{{2
+        btns, vals = xi.props()
+        self.txt1.delete(0, tk.END)
+        self.txt2.delete(0, tk.END)
+        self.txt3.delete(0, tk.END)
+        self.txt4.delete(0, tk.END)
+        self.txt1.insert(0, "{}".format(vals[0]))
+        self.txt2.insert(0, "{}".format(vals[1]))
+        self.txt3.insert(0, "{}".format(vals[2]))
+        self.txt4.insert(0, "{}".format(vals[3]))
+        self.root.after(100, self.callback_idle)
+
+
 def buildgui(opts: Any) -> Tk:  # {{{1
-    root = Tk()
+    global gui
+    gui = Gui()
+
+    root = gui.root = Tk()
     root.title("{}".format(
         os.path.splitext(os.path.basename(__file__))[0]))
 
@@ -110,12 +159,14 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     btn2 = tk.Button(frm11, width=10)
     btn2.pack(side=tk.LEFT)
 
-    txt1 = tk.Text(frm13, height=1, width=10)
-    txt1.pack()
-    txt1 = tk.Text(frm13, height=1, width=10)
-    txt1.pack()
-    txt1 = tk.Text(frm13, height=1, width=10)
-    txt1.pack()
+    gui.txt1 = tk.Entry(frm13, width=10)
+    gui.txt1.pack()
+    gui.txt2 = tk.Entry(frm13, width=10)
+    gui.txt2.pack()
+    gui.txt3 = tk.Entry(frm13, width=10)
+    gui.txt3.pack()
+    gui.txt4 = tk.Entry(frm13, width=10)
+    gui.txt4.pack()
 
     frm11.pack(side=tk.LEFT, anchor=tk.N)
     mouse.pack(side=tk.LEFT, anchor=tk.N)
@@ -263,6 +314,7 @@ def gui_canvas(inst: tk.Canvas, btns: List[str]) -> None:  # {{{2
 def main() -> int:  # {{{1
     opts = options()
     root = buildgui(opts)
+    root.after_idle(gui.callback_idle)
     root.mainloop()
     return 0
 
