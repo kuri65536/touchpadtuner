@@ -88,33 +88,40 @@ def buildgui(opts: Any) -> Tk:  # {{{1
         os.path.splitext(os.path.basename(__file__))[0]))
 
     # 1st: pad, mouse and indicator
-    frm = ttk.Frame(root)
-    frm.pack(expand=1, fill="both")
+    frm1 = ttk.Frame(root, height=5)
 
-    #
-    frm2 = ttk.Frame(frm)
-    frm2.pack(side=tk.LEFT)
-    mouse = tk.Canvas(frm, width=100, height=100)
-    mouse.pack(side=tk.LEFT)
-    frm3 = ttk.Frame(frm)
-    frm3.pack(side=tk.LEFT)
+    ''' +--root--------------------+
+        |+--frm1------------------+|
+        ||+-frm11-+-mouse-+-frm13-+|
+        |+--tab-------------------+|
+        |+--frm3------------------+|
+        +--------------------------+
+    '''
+    frm11 = ttk.Frame(frm1)
+    mouse = tk.Canvas(frm1, width=200, height=200)
+    frm13 = ttk.Frame(frm1)
 
-    pad = tk.Button(frm2)
+    gui_canvas(mouse, ["white", "white", "white"])
+
+    pad = tk.Button(frm11, width=23, height=4)
     pad.pack()
-    btn1 = tk.Button(frm2)
+    btn1 = tk.Button(frm11, width=10)
     btn1.pack(side=tk.LEFT)
-    btn2 = tk.Button(frm2)
+    btn2 = tk.Button(frm11, width=10)
     btn2.pack(side=tk.LEFT)
 
-    txt1 = tk.Text(frm3, height=1, width=10)
+    txt1 = tk.Text(frm13, height=1, width=10)
     txt1.pack()
-    txt1 = tk.Text(frm3, height=1, width=10)
+    txt1 = tk.Text(frm13, height=1, width=10)
     txt1.pack()
-    txt1 = tk.Text(frm3, height=1, width=10)
+    txt1 = tk.Text(frm13, height=1, width=10)
     txt1.pack()
 
+    frm11.pack(side=tk.LEFT, anchor=tk.N)
+    mouse.pack(side=tk.LEFT, anchor=tk.N)
+    frm13.pack(side=tk.LEFT, anchor=tk.N)
+
     # 2nd: tab control
-    frm = ttk.Frame(root)
     nb = ttk.Notebook(root)
     page1 = ttk.Frame(nb)
     nb.add(page1, text="Tap/Click")
@@ -122,16 +129,20 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     nb.add(page2, text="Detail")
     page3 = ttk.Frame(nb)
     nb.add(page3, text="About")
-    nb.pack(expand=1, fill="both")
 
     # 3rd: main button
-    frm = ttk.Frame(root)
-    frm.pack(expand=1, fill="both")
+    frm3 = ttk.Frame(root)
 
-    btn1 = tk.Button(frm, text="Save")
-    btn1.pack(side=tk.LEFT)
-    btn2 = tk.Button(frm, text="Quit")
-    btn2.pack(side=tk.LEFT)
+    btn2 = tk.Button(frm3, text="Quit")
+    btn2.pack(side=tk.RIGHT, padx=10)
+    btn1 = tk.Button(frm3, text="Save")
+    btn1.pack(side=tk.RIGHT, padx=10)
+    btn0 = tk.Button(frm3, text="Apply")
+    btn0.pack(side=tk.RIGHT, padx=10)
+
+    frm1.pack(expand=1, fill="both")
+    nb.pack(expand=1, fill="both")
+    frm3.pack(expand=1, fill="both")
 
     # sub pages {{{2
     '''xinput list-props 11
@@ -186,10 +197,10 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     # page1 - basic
     # Click Action
     seq = ["Left-Click", "Right-Click", "Middel-Click"]
-    tk.Label(page1, text="Click actions").pack()
+    tk.Label(page1, text="Click actions").pack(anchor=tk.W)
     frm = tk.Frame(page1)
     frm.pack()
-    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT)
+    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
     ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
     tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
     ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
@@ -197,10 +208,10 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
 
     # Tap Action
-    tk.Label(page1, text="Tap actions").pack()
+    tk.Label(page1, text="Tap actions").pack(anchor=tk.W)
     frm = tk.Frame(page1)
     frm.pack()
-    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT)
+    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
     ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
     tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
     ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
@@ -224,7 +235,28 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Label(page3, text="Shimoda (kuri65536@hotmail.com)").pack()
     tk.Label(page3, text="License: Modified BSD, 2017").pack()
 
+    # pad.config(height=4)
     return root
+
+
+def gui_canvas(inst: tk.Canvas, btns: List[str]) -> None:  # {{{2
+    _20 = 20
+    _35 = 35
+    _45 = 45
+    _55 = 55
+    _65 = 65
+    _80 = 80
+    _100 = 100
+
+    # +-++++++-+
+    # | |||||| |  (60 - 30) / 3 = 10
+    inst.create_rectangle(0, 0, _100, _100, fill='white')  # ,stipple='gray25')
+    inst.create_rectangle(_20, _20, _80, _80, fill='white')
+    inst.create_rectangle(_35, _20, _45, _45, fill=btns[0])
+    inst.create_rectangle(_45, _20, _55, _45, fill=btns[1])
+    inst.create_rectangle(_55, _20, _65, _45, fill=btns[2])
+    # inst.create_arc(_20, _20, _80, _40, style='arc', fill='white')
+    # inst.create_line(_20, _40, _20, _80, _80, _80, _80, _40)
 
 
 # main {{{1
