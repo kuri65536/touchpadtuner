@@ -35,6 +35,10 @@ import tkinter as tk
 from tkinter import Tk, ttk
 
 
+def allok(seq: List[str]) -> bool:
+    return True
+
+
 # xinput {{{1
 class XInputDB(object):  # {{{1
     dev = 11
@@ -64,9 +68,6 @@ class XInputDB(object):  # {{{1
         ret = int(curs)
         return ret
 
-    def allok(self, seq: List[str]) -> bool:  # {{{2
-        return True
-
     def prop_get(self, key) -> List[str]:  # {{{2
         cmd = self.cmd_shw.format(self.dev, key)
         curb = subprocess.check_output(cmd, shell=True)
@@ -85,7 +86,7 @@ class XInputDB(object):  # {{{1
             seq = self.prop_get(key)
         return True if seq[idx] == "1" else False
 
-    def prop_i32(self, key: int, idx: int,  # {{{2
+    def prop_int(self, typ: str, key: int, idx: int,  # {{{2
                  v: Optional[int]=None,
                  func: Callable[[List[str]], bool]=allok) -> bool:
         seq = self.prop_get(key)
@@ -94,25 +95,29 @@ class XInputDB(object):  # {{{1
             seq[idx] = "{}".format(v)
             if func(seq):
                 cmd = [self.cmd_bin, self.cmd_int, str(self.dev),
-                       str(key), "32"]
-                print("prop_i32: " + str(cmd + seq))
+                       str(key), typ]
+                print("prop_i{}: ".format(typ) + str(cmd + seq))
                 subprocess.call(cmd + seq)
                 seq = self.prop_get(key)
             else:
                 seq[idx] = org
         return int(seq[idx])
 
-    def clk1(self, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(291, 0, v)
+    def prop_i32(self, key: int, idx: int,  # {{{2
+                 v: Optional[int]=None,
+                 func: Callable[[List[str]], bool]=allok) -> bool:
+        return self.prop_int("32", key, idx, v, func)
 
-    def clk2(self, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(291, 1, v)
+    def prop_i8(self, key: int, idx: int,  # {{{2
+                v: Optional[int]=None,
+                func: Callable[[List[str]], bool]=allok) -> bool:
+        return self.prop_int("8", key, idx, v, func)
 
-    def clk3(self, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(291, 2, v)
+    def clks(self, i: int, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i8(291, i, v)
 
     def taps(self, i: int, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(290, i, v)
+        return self.prop_i8(290, i, v)
 
     def fingerlow(self, v: Optional[int]=None) -> int:  # {{{2
         def limit(seq: List[str]) -> bool:
@@ -167,6 +172,8 @@ class XInputDB(object):  # {{{1
         self.db = {}
         self.db["fingerlow"] = self.fingerlow()
         self.db["fingerhig"] = self.fingerhig()
+        self.db["clks"] = [self.clks(i) for i in range(3)]
+        self.db["taps"] = [self.taps(i) for i in range(7)]
         self.db["vert2fingerscroll"] = self.vert2fingerscroll()
         self.db["horz2fingerscroll"] = self.horz2fingerscroll()
         return self
@@ -281,6 +288,10 @@ class Gui(object):  # {{{1
         xi._vert2fingerscroll.set(1 if xiorg.db["vert2fingerscroll"] else 0)
 
     def cmdapply(self) -> None:  # {{{2
+        for i in range(3):
+            xi.clks(i, self.clks[i].current())
+        for i in range(7):
+            xi.taps(i, self.taps[i].current())
         xi.fingerlow(self.fingerlow.get())
         xi.fingerhig(self.fingerhig.get())
         xi.horz2fingerscroll(xi._horz2fingerscroll.get() == 1)
@@ -415,21 +426,21 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     # page1 - basic {{{2
     # Click Action
     seq = ["Disabled", "Left-Click", "Middel-Click", "Right-Click"]
+    gui.clks = []  # type: List[ttk.Combobox]
     tk.Label(page1, text="Click actions").pack(anchor=tk.W)
     frm = tk.Frame(page1)
     frm.pack()
     tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
-    gui.clk1 = ttk.Combobox(frm, values=seq)
-    gui.clk1.pack(side=tk.LEFT)
+    gui.clks.append(ttk.Combobox(frm, values=seq))
+    gui.clks[-1].pack(side=tk.LEFT)
     tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
-    gui.clk2 = ttk.Combobox(frm, values=seq)
-    gui.clk2.pack(side=tk.LEFT)
+    gui.clks.append(ttk.Combobox(frm, values=seq))
+    gui.clks[-1].pack(side=tk.LEFT)
     tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
-    gui.clk3 = ttk.Combobox(frm, values=seq)
-    gui.clk3.pack(side=tk.LEFT)
-    gui.clk1.current(xi.clk1())
-    gui.clk2.current(xi.clk2())
-    gui.clk3.current(xi.clk3())
+    gui.clks.append(ttk.Combobox(frm, values=seq))
+    gui.clks[-1].pack(side=tk.LEFT)
+    for i in range(3):
+        gui.clks[i].current(xi.clks(i))
 
     # Tap Action
     gui.taps = []  # type: List[ttk.Combobox]
