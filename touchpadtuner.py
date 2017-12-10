@@ -39,7 +39,7 @@ from tkinter import Tk, ttk
 class XInputDB(object):  # {{{1
     cmd_bin = "/usr/bin/xinput"
     cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
-    cmd_int = cmd_bin + " set-int-prop {} {} {} {}"
+    cmd_int = "set-int-prop"
     cmd_flt = cmd_bin + " set-float-prop {} {} {} {}"
     cmd_atm = cmd_bin + " set-atomt-prop {} {} {} {}"
 
@@ -51,32 +51,33 @@ class XInputDB(object):  # {{{1
     def prop_get(self, key) -> List[str]:  # {{{2
         cmd = self.cmd_shw.format(self.dev, key)
         curb = subprocess.check_output(cmd, shell=True)
-        curs = curb.decode("utf-8")
+        curs = curb.decode("utf-8").strip()
         seq = curs.split(":")[1].split(",")
-        return seq
+        return [i.strip() for i in seq]
 
     def prop_bool(self, key: int, idx: int,  # {{{2
                   v: Optional[bool]=None) -> bool:
         seq = self.prop_get(key)
         if v is not None:
             seq[idx] = "1" if v else "0"
-            s = ' '.join(seq)
-            cmd = self.cmd_int.format(self.dev, key, "8", s)
-            subprocess.call(cmd)
+            cmd = [self.cmd_bin, self.cmd_int, str(self.dev), str(key), "8"]
+            print("prop_bool: " + str(cmd + seq))
+            subprocess.call(cmd + seq)
             seq = self.prop_get(key)
         return True if seq[idx] == "1" else False
 
-    def prop_i8(self, key: int, idx: int,  # {{{2
-                v: Optional[int]=None,
-                func=Callable[[List[str]], bool]) -> bool:
+    def prop_i32(self, key: int, idx: int,  # {{{2
+                 v: Optional[int]=None,
+                 func=Callable[[List[str]], bool]) -> bool:
         seq = self.prop_get(key)
         if v is not None:
             org = seq[idx]
             seq[idx] = "{}".format(v)
             if func(seq):
-                s = ' '.join(seq)
-                cmd = [self.cmd_bin, self.cmd_int, str(self.dev), str(key), s]
-                subprocess.call(cmd)
+                cmd = [self.cmd_bin, self.cmd_int, str(self.dev),
+                       str(key), "32"]
+                print("prop_i32: " + str(cmd + seq))
+                subprocess.call(cmd + seq)
                 seq = self.prop_get(key)
             else:
                 seq[idx] = org
@@ -87,14 +88,14 @@ class XInputDB(object):  # {{{1
             low = int(seq[0])
             hig = int(seq[1])
             return low < hig
-        return self.prop_i8(275, 0, v, limit)
+        return self.prop_i32(275, 0, v, limit)
 
     def fingerhig(self, v: Optional[int]=None) -> int:  # {{{2
         def limit(seq: List[str]) -> bool:
             low = int(seq[0])
             hig = int(seq[1])
             return low > hig
-        return self.prop_i8(275, 1, v, limit)
+        return self.prop_i32(275, 1, v, limit)
 
     def vert2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
         return self.prop_bool(285, 0, v)
@@ -130,6 +131,14 @@ class XInputDB(object):  # {{{1
         btns = [_btns.get(i, False) for i in range(max(_btns.keys()) + 1)]
         vals = [_vals.get(i, 0) for i in range(max(_vals.keys()) + 1)]
         return btns, vals
+
+    def fetch(self) -> 'XInputDB':  # {{{2
+        self.db = {}
+        self.db["fingerlow"] = self.fingerlow()
+        self.db["fingerhig"] = self.fingerhig()
+        self.db["vert2fingerscroll"] = self.vert2fingerscroll()
+        self.db["horz2fingerscroll"] = self.horz2fingerscroll()
+        return self
 
     def dump(self, fname: str, fnameIn: str) -> str:  # {{{2
         '''sample output {{{3
@@ -186,7 +195,9 @@ class XInputDB(object):  # {{{1
         return ret
 
 
+# {{{2
 xi = XInputDB()
+xiorg = XInputDB().fetch()
 
 
 # options {{{1
@@ -225,6 +236,27 @@ class Gui(object):  # {{{1
             return
         self.fingerhig.set(vl + 1)
 
+    def cmdrestore(self) -> None:  # {{{2
+        xi.fingerlow(xiorg.db["fingerlow"])
+        self.fingerlow.set(xiorg.db["fingerlow"])
+        xi.fingerhig(xiorg.db["fingerhig"])
+        self.fingerhig.set(xiorg.db["fingerhig"])
+
+        xi._horz2fingerscroll.set(1 if xiorg.db["horz2fingerscroll"] else 0)
+        xi._vert2fingerscroll.set(1 if xiorg.db["vert2fingerscroll"] else 0)
+
+    def cmdapply(self) -> None:  # {{{2
+        xi.fingerlow(self.fingerlow.get())
+        xi.fingerhig(self.fingerhig.get())
+        xi.horz2fingerscroll(xi._horz2fingerscroll.get() == 1)
+        xi.vert2fingerscroll(xi._vert2fingerscroll.get() == 1)
+
+    def cmdsave(self) -> None:  # {{{2
+        xi.dump(opts.fnameOut, opts.fnameIn)
+
+    def cmdquit(self) -> None:  # {{{2
+        self.root.quit()
+
 
 def buildgui(opts: Any) -> Tk:  # {{{1
     global gui
@@ -234,7 +266,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     root.title("{}".format(
         os.path.splitext(os.path.basename(__file__))[0]))
 
-    # 1st: pad, mouse and indicator
+    # 1st: pad, mouse and indicator {{{2
     frm1 = ttk.Frame(root, height=5)
 
     ''' +--root--------------------+
@@ -282,13 +314,13 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     # 3rd: main button
     frm3 = ttk.Frame(root)
 
-    btn3 = tk.Button(frm3, text="Quit")
+    btn3 = tk.Button(frm3, text="Quit", command=gui.cmdquit)
     btn3.pack(side=tk.RIGHT, padx=10)
-    btn2 = tk.Button(frm3, text="Save")
+    btn2 = tk.Button(frm3, text="Save", command=gui.cmdsave)
     btn2.pack(side=tk.RIGHT, padx=10)
-    btn1 = tk.Button(frm3, text="Apply")
+    btn1 = tk.Button(frm3, text="Apply", command=gui.cmdapply)
     btn1.pack(side=tk.RIGHT, padx=10)
-    btn0 = tk.Button(frm3, text="Restore")
+    btn0 = tk.Button(frm3, text="Restore", command=gui.cmdrestore)
     btn0.pack(side=tk.RIGHT, padx=10)
 
     frm1.pack(expand=1, fill="both")
@@ -426,6 +458,7 @@ def gui_canvas(inst: tk.Canvas, btns: List[str]) -> None:  # {{{2
 
 # main {{{1
 def main() -> int:  # {{{1
+    global opts
     opts = options()
     root = buildgui(opts)
     root.after_idle(gui.callback_idle)
