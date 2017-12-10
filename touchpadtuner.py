@@ -262,6 +262,8 @@ class Gui(object):  # {{{1
         self.txt2.insert(0, "{}".format(vals[1]))
         self.txt3.insert(0, "{}".format(vals[2]))
         self.txt4.insert(0, "{}".format(vals[3]))
+        _btns = ["black" if i else "white" for i in btns]
+        gui_canvas(self.mouse, _btns)
         self.root.after(100, self.callback_idle)
 
     def cmdfingerlow(self, ev: tk.Event) -> None:  # {{{2
@@ -323,10 +325,10 @@ def buildgui(opts: Any) -> Tk:  # {{{1
         +--------------------------+
     '''
     frm11 = ttk.Frame(frm1)
-    mouse = tk.Canvas(frm1, width=200, height=200)
+    gui.mouse = tk.Canvas(frm1, width=200, height=200)
     frm13 = ttk.Frame(frm1)
 
-    gui_canvas(mouse, ["white", "white", "white"])
+    gui_canvas(gui.mouse, ["white", "white", "white"])
 
     pad = tk.Button(frm11, width=23, height=4)
     pad.pack()
@@ -345,15 +347,21 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     gui.txt4.pack()
 
     frm11.pack(side=tk.LEFT, anchor=tk.N)
-    mouse.pack(side=tk.LEFT, anchor=tk.N)
+    gui.mouse.pack(side=tk.LEFT, anchor=tk.N)
     frm13.pack(side=tk.LEFT, anchor=tk.N)
 
     # 2nd: tab control
     nb = ttk.Notebook(root)
     page1 = ttk.Frame(nb)
     nb.add(page1, text="Tap/Click")
+    page4 = ttk.Frame(nb)
+    nb.add(page4, text="Area")
     page2 = ttk.Frame(nb)
-    nb.add(page2, text="Detail")
+    nb.add(page2, text="Two-Fingers")
+    page5 = ttk.Frame(nb)
+    nb.add(page5, text="Misc.")
+    page6 = ttk.Frame(nb)
+    nb.add(page6, text="Readonly")
     page3 = ttk.Frame(nb)
     nb.add(page3, text="About")
 
@@ -384,43 +392,43 @@ def buildgui(opts: Any) -> Tk:  # {{{1
         Device Accel Constant Deceleration (271): 2.500000
         Device Accel Adaptive Deceleration (272): 1.000000
         Device Accel Velocity Scaling (273):      12.500000
-        Synaptics Edges (274):                    127, 3065, 98, 1726
-        Synaptics Finger (275):                   50, 100, 0
-        Synaptics Tap Time (276):                 180
-        Synaptics Tap Move (277):                 161
-        Synaptics Tap Durations (278):            180, 180, 100
-        Synaptics ClickPad (279):                 1
-        Synaptics Middle Button Timeout (280):    0
-        Synaptics Two-Finger Pressure (281):      282
-        Synaptics Two-Finger Width (282):         7
-        Synaptics Scrolling Distance (283):       73, 73
-        Synaptics Edge Scrolling (284):           1, 0, 0
-        Synaptics Two-Finger Scrolling (285):     1, 1
-        Synaptics Move Speed (286):               1.0, 1.75, 0.054407, 0.000000
-        Synaptics Off (287):                      1
-        Synaptics Locked Drags (288):             0
-        Synaptics Locked Drags Timeout (289):     5000
-        Synaptics Tap Action (290):               2, 3, 0, 0, 1, 3, 2
-        Synaptics Click Action (291):             1, 3, 0
-        Synaptics Circular Scrolling (292):       0
-        Synaptics Circular Scrolling Distance (293): 0.100000
-        Synaptics Circular Scrolling Trigger (294):  0
-        Synaptics Circular Pad (295):             0
-        Synaptics Palm Detection (296):           0
-        Synaptics Palm Dimensions (297):          10, 200
-        Synaptics Coasting Speed (298):           20.000000, 50.000000
-        Synaptics Pressure Motion (299):          30, 160
-        Synaptics Pressure Motion Factor (300):   1.000000, 1.000000
-        Synaptics Resolution Detect (301):        1
-        Synaptics Grab Event Device (302):        0
-        Synaptics Gestures (303):                 1
-        Synaptics Capabilities (304):             1, 0, 0, 1, 1, 0, 0
-        Synaptics Pad Resolution (305):           31, 31
-        Synaptics Area (306):                     0, 0, 0, 0
-        Synaptics Soft Button Areas (307):        1596, 0, 1495, 0, 0, 0, 0, 0
-        Synaptics Noise Cancellation (308):       18, 18
-        Device Product ID (267):                  1267, 12372
-        Device Node (266):                        "/dev/input/event8"
+      4 Synaptics Edges (274):                    127, 3065, 98, 1726
+      1 Synaptics Finger (275):                   50, 100, 0
+      1 Synaptics Tap Time (276):                 180
+      1 Synaptics Tap Move (277):                 161
+      1 Synaptics Tap Durations (278):            180, 180, 100
+      x Synaptics ClickPad (279):                 1
+      x Synaptics Middle Button Timeout (280):    0
+      2 Synaptics Two-Finger Pressure (281):      282
+      2 Synaptics Two-Finger Width (282):         7
+      2 Synaptics Scrolling Distance (283):       73, 73
+      4 Synaptics Edge Scrolling (284):           1, 0, 0
+      2 Synaptics Two-Finger Scrolling (285):     1, 1
+      5 Synaptics Move Speed (286):               1.0, 1.75, 0.054407, 0.000000
+      x Synaptics Off (287):                      1
+      5 Synaptics Locked Drags (288):             0
+      5 Synaptics Locked Drags Timeout (289):     5000
+      1 Synaptics Tap Action (290):               2, 3, 0, 0, 1, 3, 2
+      1 Synaptics Click Action (291):             1, 3, 0
+      5 Synaptics Circular Scrolling (292):       0
+      5 Synaptics Circular Scrolling Distance (293): 0.100000
+      5 Synaptics Circular Scrolling Trigger (294):  0
+      5 Synaptics Circular Pad (295):             0
+      4 Synaptics Palm Detection (296):           0
+      4 Synaptics Palm Dimensions (297):          10, 200
+      5 Synaptics Coasting Speed (298):           20.000000, 50.000000
+      5 Synaptics Pressure Motion (299):          30, 160
+      5 Synaptics Pressure Motion Factor (300):   1.000000, 1.000000
+      x Synaptics Resolution Detect (301):        1
+      x Synaptics Grab Event Device (302):        0
+      5 Synaptics Gestures (303):                 1
+      6 Synaptics Capabilities (304):             1, 0, 0, 1, 1, 0, 0
+      6 Synaptics Pad Resolution (305):           31, 31
+      x Synaptics Area (306):                     0, 0, 0, 0
+      4 Synaptics Soft Button Areas (307):        1596, 0, 1495, 0, 0, 0, 0, 0
+      5 Synaptics Noise Cancellation (308):       18, 18
+      x Device Product ID (267):                  1267, 12372
+      x Device Node (266):                        "/dev/input/event8"
     '''
 
     # page1 - basic {{{2
@@ -463,13 +471,13 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     gui.taps[-1].pack(side=tk.LEFT)
     frm = tk.Frame(page1)
     frm.pack()
-    tk.Label(frm, text="F1").pack(side=tk.LEFT, padx=10)
+    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
-    tk.Label(frm, text="F2").pack(side=tk.LEFT)
+    tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
-    tk.Label(frm, text="F3").pack(side=tk.LEFT)
+    tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
     for i in range(len(gui.taps)):
@@ -479,27 +487,170 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     frm_ = tk.Frame(page1)
     tk.Label(frm_, text="FingerLow", width=10).pack(side=tk.LEFT)
     gui.fingerlow = tk.Scale(frm_, from_=1, to=255, orient=tk.HORIZONTAL)
-    gui.fingerlow.pack(expand=True, fill="x")
-    frm_.pack(fill="x")
-    frm_ = tk.Frame(page1)
+    gui.fingerlow.pack(side=tk.LEFT, expand=True, fill="x")
+    # frm_.pack(fill="x")
+    # frm_ = tk.Frame(page1)
     tk.Label(frm_, text="FingerHigh", width=10).pack(side=tk.LEFT)
     gui.fingerhig = tk.Scale(frm_, from_=1, to=255, orient=tk.HORIZONTAL)
-    gui.fingerhig.pack(expand=True, fill="x")
+    gui.fingerhig.pack(side=tk.LEFT, expand=True, fill="x")
     frm_.pack(fill="x")
     gui.fingerlow.set(xi.fingerlow())
     gui.fingerhig.set(xi.fingerhig())
     gui.fingerlow.bind("<ButtonRelease-1>", gui.cmdfingerlow)
     gui.fingerhig.bind("<ButtonRelease-1>", gui.cmdfingerhig)
 
-    # page2 - detail {{{2
+    frm = tk.Frame(page1)
+    tk.Label(frm, text="Tap Time", width=10).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="Tap Move", width=10).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page1)
+    tk.Label(frm, text="Tap Durations", width=10).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+
+    # page4 - Area {{{2
+    frm = tk.Frame(page4)
+    xi._palmDetect = tk.IntVar()
+    tk.Checkbutton(frm, text="Palm detect",
+                   variable=xi._palmDetect).pack(side=tk.LEFT)
+    tk.Label(frm, text="Palm dimensions").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+
+    frm = tk.Frame(page4)
+    tk.Label(frm, text="Edge-X").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="Edge-y").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=1800, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=1800, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+
+    tk.Label(page4, text="Soft Button Areas "
+             "(RB=Right Button, MB=Middle Button)").pack()
+    frm = tk.Frame(page4)
+    tk.Label(frm, text="RB-Left").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="RB-Right").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="RB-Top").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="RB-Bottom").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page4)
+    tk.Label(frm, text="MB-Left").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="MB-Right").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="MB-Top").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="MB-Bottom").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+
+    frm = tk.Frame(page4)
+    xi._edgeVert = tk.IntVar()
+    xi._edgeHorz = tk.IntVar()
+    xi._edgeCoas = tk.IntVar()
+    tk.Checkbutton(frm, text="Edge scroll(Vert)",
+                   variable=xi._edgeVert).pack(side=tk.LEFT)
+    tk.Checkbutton(frm, text="Edge scroll(Horz)",
+                   variable=xi._edgeHorz).pack(side=tk.LEFT)
+    tk.Checkbutton(frm, text="Corner Coasting",
+                   variable=xi._edgeCoas).pack(side=tk.LEFT)
+    frm.pack()
+
+    # page2 - two-fingers {{{2
+    frm = tk.Frame(page2)
     xi._vert2fingerscroll = tk.IntVar()
     xi._horz2fingerscroll = tk.IntVar()
     xi._vert2fingerscroll.set(1 if xi.vert2fingerscroll() else 0)
     xi._horz2fingerscroll.set(1 if xi.vert2fingerscroll() else 0)
-    tk.Checkbutton(page2, text="2-Finger Scroll(Vert)",
-                   variable=xi._vert2fingerscroll).pack()
-    tk.Checkbutton(page2, text="2-Finger Scroll(Horz)",
-                   variable=xi._horz2fingerscroll).pack()
+    tk.Checkbutton(frm, text="2-Finger Scroll(Vert)",
+                   variable=xi._vert2fingerscroll).pack(side=tk.LEFT)
+    tk.Checkbutton(frm, text="2-Finger Scroll(Horz)",
+                   variable=xi._horz2fingerscroll).pack(side=tk.LEFT)
+    frm.pack()
+
+    frm = tk.Frame(page2)
+    tk.Label(frm, text="Two-Finger Pressure").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="Two-Finger Width").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+
+    frm = tk.Frame(page2)
+    tk.Label(frm, text="Scrolling Distance").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+
+    # page5 - Misc {{{2
+    frm = tk.Frame(page5)
+    tk.Label(frm, text="Noise Cancel (x-y)").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page5)
+    tk.Label(frm, text="Move speed").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page5)
+    tk.Label(frm, text="Pressure Motion").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="Factor").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page5)
+    tk.Label(frm, text="Coasting speed").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page5)
+    tk.Label(frm, text="Locked Drags").pack(side=tk.LEFT)
+    tk.Checkbutton(frm, text="on").pack(side=tk.LEFT)
+    tk.Label(frm, text="timeout").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=1, to=100000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Checkbutton(frm, text="gesture").pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page5)
+    tk.Label(frm, text="Circular scrolling").pack(side=tk.LEFT)
+    tk.Checkbutton(frm, text="on").pack(side=tk.LEFT)
+    tk.Checkbutton(frm, text="circular-pad").pack(side=tk.LEFT)
+    tk.Label(frm, text="distance").pack(side=tk.LEFT)
+    tk.Scale(frm, from_=0.01, to=100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="trigger").pack(side=tk.LEFT)
+    ttk.Combobox(frm, values=["0: All Edges",
+                              "1: Top Edge",
+                              "2: Top Right Corner",
+                              "3: Right Edge",
+                              "4: Bottom Right Corner",
+                              "5: Bottom Edge",
+                              "6: Bottom Left Corner",
+                              "7: Left Edge",
+                              "8: Top Left Corner"]).pack(side=tk.LEFT)
+    frm.pack()
+
+    # page6 - Misc {{{2
+    frm = tk.Frame(page6)
+    tk.Label(frm, text="Capability").pack(side=tk.LEFT)
+    tk.Label(frm, text="...").pack(side=tk.LEFT)
+    frm.pack()
+    frm = tk.Frame(page6)
+    tk.Label(frm, text="Resolution [unit/mm]").pack(side=tk.LEFT)
+    tk.Label(frm, text="...").pack(side=tk.LEFT)
+    frm.pack()
 
     # page3 - About (License information) {{{2
     tk.Label(page3, text="TouchPad Tuner").pack()
