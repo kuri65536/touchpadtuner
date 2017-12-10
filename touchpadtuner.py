@@ -37,6 +37,7 @@ from tkinter import Tk, ttk
 
 # xinput {{{1
 class XInputDB(object):  # {{{1
+    dev = 11
     cmd_bin = "/usr/bin/xinput"
     cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
     cmd_int = "set-int-prop"
@@ -46,7 +47,22 @@ class XInputDB(object):  # {{{1
     cmd_wat = "query-state"
 
     def __init__(self):
-        self.dev = 11
+        pass
+
+    @classmethod
+    def determine_devid(cls) -> bool:
+        cmd = cls.cmd_bin + " list | grep -i TouchPad"
+        curb = subprocess.check_output(cmd, shell=True)
+        curs = curb.decode("utf-8").strip()
+        if curs == "":
+            return True
+        if "id=" not in curs:
+            return True
+        curs = curs[curs.find("id="):]
+        curs = curs[3:]
+        curs = curs.split("\t")[0]  # TODO: use regex for more robust operation
+        ret = int(curs)
+        return ret
 
     def prop_get(self, key) -> List[str]:  # {{{2
         cmd = self.cmd_shw.format(self.dev, key)
@@ -204,7 +220,11 @@ xiorg = XInputDB().fetch()
 def options() -> Any:  # {{{1
     from argparse import ArgumentParser
     p = ArgumentParser()
+    p.add_argument('--device-id', '-d', type=int, default=0)
     opts = p.parse_args()
+
+    if opts.device_id == 0:
+        XInputDB.determine_devid()
     return opts
 
 
@@ -403,15 +423,15 @@ def buildgui(opts: Any) -> Tk:  # {{{1
 
     # Tap Threshold
     frm_ = tk.Frame(page1)
-    tk.Label(frm_, text="FingerLow").pack(side=tk.LEFT)
+    tk.Label(frm_, text="FingerLow", width=10).pack(side=tk.LEFT)
     gui.fingerlow = tk.Scale(frm_, from_=1, to=255, orient=tk.HORIZONTAL)
-    gui.fingerlow.pack()
-    frm_.pack()
+    gui.fingerlow.pack(expand=True, fill="x")
+    frm_.pack(fill="x")
     frm_ = tk.Frame(page1)
-    tk.Label(frm_, text="FingerHigh").pack(side=tk.LEFT)
+    tk.Label(frm_, text="FingerHigh", width=10).pack(side=tk.LEFT)
     gui.fingerhig = tk.Scale(frm_, from_=1, to=255, orient=tk.HORIZONTAL)
-    gui.fingerhig.pack()
-    frm_.pack()
+    gui.fingerhig.pack(expand=True, fill="x")
+    frm_.pack(fill="x")
     gui.fingerlow.set(xi.fingerlow())
     gui.fingerhig.set(xi.fingerhig())
     gui.fingerlow.bind("<ButtonRelease-1>", gui.cmdfingerlow)
