@@ -64,6 +64,9 @@ class XInputDB(object):  # {{{1
         ret = int(curs)
         return ret
 
+    def allok(self, seq: List[str]) -> bool:  # {{{2
+        return True
+
     def prop_get(self, key) -> List[str]:  # {{{2
         cmd = self.cmd_shw.format(self.dev, key)
         curb = subprocess.check_output(cmd, shell=True)
@@ -84,7 +87,7 @@ class XInputDB(object):  # {{{1
 
     def prop_i32(self, key: int, idx: int,  # {{{2
                  v: Optional[int]=None,
-                 func=Callable[[List[str]], bool]) -> bool:
+                 func: Callable[[List[str]], bool]=allok) -> bool:
         seq = self.prop_get(key)
         if v is not None:
             org = seq[idx]
@@ -98,6 +101,18 @@ class XInputDB(object):  # {{{1
             else:
                 seq[idx] = org
         return int(seq[idx])
+
+    def clk1(self, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(291, 0, v)
+
+    def clk2(self, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(291, 1, v)
+
+    def clk3(self, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(291, 2, v)
+
+    def taps(self, i: int, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(290, i, v)
 
     def fingerlow(self, v: Optional[int]=None) -> int:  # {{{2
         def limit(seq: List[str]) -> bool:
@@ -399,27 +414,55 @@ def buildgui(opts: Any) -> Tk:  # {{{1
 
     # page1 - basic {{{2
     # Click Action
-    seq = ["Left-Click", "Right-Click", "Middel-Click"]
+    seq = ["Disabled", "Left-Click", "Middel-Click", "Right-Click"]
     tk.Label(page1, text="Click actions").pack(anchor=tk.W)
     frm = tk.Frame(page1)
     frm.pack()
     tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
-    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    gui.clk1 = ttk.Combobox(frm, values=seq)
+    gui.clk1.pack(side=tk.LEFT)
     tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
-    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    gui.clk2 = ttk.Combobox(frm, values=seq)
+    gui.clk2.pack(side=tk.LEFT)
     tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
-    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    gui.clk3 = ttk.Combobox(frm, values=seq)
+    gui.clk3.pack(side=tk.LEFT)
+    gui.clk1.current(xi.clk1())
+    gui.clk2.current(xi.clk2())
+    gui.clk3.current(xi.clk3())
 
     # Tap Action
+    gui.taps = []  # type: List[ttk.Combobox]
     tk.Label(page1, text="Tap actions").pack(anchor=tk.W)
     frm = tk.Frame(page1)
     frm.pack()
-    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
-    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
-    tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
-    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
-    tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
-    ttk.Combobox(frm, values=seq).pack(side=tk.LEFT)
+    tk.Label(frm, text="RT").pack(side=tk.LEFT, padx=10)
+    gui.taps.append(ttk.Combobox(frm, values=seq))
+    gui.taps[-1].pack(side=tk.LEFT)
+    tk.Label(frm, text="RB").pack(side=tk.LEFT)
+    gui.taps.append(ttk.Combobox(frm, values=seq))
+    gui.taps[-1].pack(side=tk.LEFT)
+    frm = tk.Frame(page1)
+    frm.pack()
+    tk.Label(frm, text="LT").pack(side=tk.LEFT, padx=10)
+    gui.taps.append(ttk.Combobox(frm, values=seq))
+    gui.taps[-1].pack(side=tk.LEFT)
+    tk.Label(frm, text="LB").pack(side=tk.LEFT)
+    gui.taps.append(ttk.Combobox(frm, values=seq))
+    gui.taps[-1].pack(side=tk.LEFT)
+    frm = tk.Frame(page1)
+    frm.pack()
+    tk.Label(frm, text="F1").pack(side=tk.LEFT, padx=10)
+    gui.taps.append(ttk.Combobox(frm, values=seq))
+    gui.taps[-1].pack(side=tk.LEFT)
+    tk.Label(frm, text="F2").pack(side=tk.LEFT)
+    gui.taps.append(ttk.Combobox(frm, values=seq))
+    gui.taps[-1].pack(side=tk.LEFT)
+    tk.Label(frm, text="F3").pack(side=tk.LEFT)
+    gui.taps.append(ttk.Combobox(frm, values=seq))
+    gui.taps[-1].pack(side=tk.LEFT)
+    for i in range(len(gui.taps)):
+        gui.taps[i].current(xi.taps(i))
 
     # Tap Threshold
     frm_ = tk.Frame(page1)
