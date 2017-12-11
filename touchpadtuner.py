@@ -51,7 +51,7 @@ class XInputDB(object):  # {{{1
     cmd_wat = "query-state"
 
     def __init__(self):
-        pass
+        self._palmDims = []  # type: List[tk.IntVar]
 
     @classmethod
     def determine_devid(cls) -> bool:
@@ -138,6 +138,12 @@ class XInputDB(object):  # {{{1
 
     def horz2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
         return self.prop_bool(285, 1, v)
+
+    def palmDetect(self, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(296, 0, v)
+
+    def palmDims(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(297, i, v)
 
     def props(self) -> Tuple[List[bool], List[str]]:  # {{{2
         cmd = [self.cmd_bin, self.cmd_wat, str(self.dev)]
@@ -252,6 +258,22 @@ def options() -> Any:  # {{{1
 
 # gui {{{1
 class Gui(object):  # {{{1
+    def checkbox(self, parent: tk.Widget, title: str,  # {{{2
+                 cur: bool) -> None:
+        ret = tk.IntVar()
+        ret.set(1 if cur else 0)
+        tk.Checkbutton(parent, text=title,
+                       variable=ret).pack(side=tk.LEFT)
+        return ret
+
+    def slider(self, parent: tk.Widget, from_: int, to: int,  # {{{2
+               cur: int) -> None:
+        ret = tk.IntVar()
+        ret.set(cur)
+        tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
+                 variable=ret).pack(side=tk.LEFT)
+        return ret
+
     def callback_idle(self):  # {{{2
         btns, vals = xi.props()
         self.txt1.delete(0, tk.END)
@@ -298,6 +320,9 @@ class Gui(object):  # {{{1
         xi.fingerhig(self.fingerhig.get())
         xi.horz2fingerscroll(xi._horz2fingerscroll.get() == 1)
         xi.vert2fingerscroll(xi._vert2fingerscroll.get() == 1)
+        xi.palmDetect(xi._palmDetect.get() == 1)
+        xi.palmDims(0, xi._palmDims[0].get())
+        xi.palmDims(1, xi._palmDims[1].get())
 
     def cmdsave(self) -> None:  # {{{2
         xi.dump(opts.fnameOut, opts.fnameIn)
@@ -391,7 +416,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
         Device Accel Profile (270):               1
         Device Accel Constant Deceleration (271): 2.500000
         Device Accel Adaptive Deceleration (272): 1.000000
-        Device Accel Velocity Scaling (273):      12.500000
+   page Device Accel Velocity Scaling (273):      12.500000
       4 Synaptics Edges (274):                    127, 3065, 98, 1726
       1 Synaptics Finger (275):                   50, 100, 0
       1 Synaptics Tap Time (276):                 180
@@ -504,23 +529,21 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Label(frm, text="Tap Move", width=10).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page1)
     tk.Label(frm, text="Tap Durations", width=10).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     # page4 - Area {{{2
     frm = tk.Frame(page4)
-    xi._palmDetect = tk.IntVar()
-    tk.Checkbutton(frm, text="Palm detect",
-                   variable=xi._palmDetect).pack(side=tk.LEFT)
+    xi._palmDetect = gui.checkbox(frm, "Palm detect", xi.palmDetect())
     tk.Label(frm, text="Palm dimensions").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    xi._palmDims.append(gui.slider(frm, 0, 3100, xi.palmDims(0)))
+    xi._palmDims.append(gui.slider(frm, 0, 3100, xi.palmDims(1)))
+    frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page4)
     tk.Label(frm, text="Edge-X").pack(side=tk.LEFT)
@@ -529,7 +552,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Label(frm, text="Edge-y").pack(side=tk.LEFT)
     tk.Scale(frm, from_=0, to=1800, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=0, to=1800, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     tk.Label(page4, text="Soft Button Areas "
              "(RB=Right Button, MB=Middle Button)").pack()
@@ -542,7 +565,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Label(frm, text="RB-Bottom").pack(side=tk.LEFT)
     tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page4)
     tk.Label(frm, text="MB-Left").pack(side=tk.LEFT)
     tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
@@ -552,7 +575,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Label(frm, text="MB-Bottom").pack(side=tk.LEFT)
     tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page4)
     xi._edgeVert = tk.IntVar()
@@ -564,7 +587,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
                    variable=xi._edgeHorz).pack(side=tk.LEFT)
     tk.Checkbutton(frm, text="Corner Coasting",
                    variable=xi._edgeCoas).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     # page2 - two-fingers {{{2
     frm = tk.Frame(page2)
@@ -576,34 +599,34 @@ def buildgui(opts: Any) -> Tk:  # {{{1
                    variable=xi._vert2fingerscroll).pack(side=tk.LEFT)
     tk.Checkbutton(frm, text="2-Finger Scroll(Horz)",
                    variable=xi._horz2fingerscroll).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page2)
     tk.Label(frm, text="Two-Finger Pressure").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Label(frm, text="Two-Finger Width").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page2)
     tk.Label(frm, text="Scrolling Distance").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     # page5 - Misc {{{2
     frm = tk.Frame(page5)
     tk.Label(frm, text="Noise Cancel (x-y)").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Move speed").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Pressure Motion").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
@@ -611,19 +634,19 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Label(frm, text="Factor").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Coasting speed").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Locked Drags").pack(side=tk.LEFT)
     tk.Checkbutton(frm, text="on").pack(side=tk.LEFT)
     tk.Label(frm, text="timeout").pack(side=tk.LEFT)
     tk.Scale(frm, from_=1, to=100000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
     tk.Checkbutton(frm, text="gesture").pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Circular scrolling").pack(side=tk.LEFT)
     tk.Checkbutton(frm, text="on").pack(side=tk.LEFT)
@@ -640,17 +663,17 @@ def buildgui(opts: Any) -> Tk:  # {{{1
                               "6: Bottom Left Corner",
                               "7: Left Edge",
                               "8: Top Left Corner"]).pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     # page6 - Misc {{{2
     frm = tk.Frame(page6)
     tk.Label(frm, text="Capability").pack(side=tk.LEFT)
     tk.Label(frm, text="...").pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
     frm = tk.Frame(page6)
     tk.Label(frm, text="Resolution [unit/mm]").pack(side=tk.LEFT)
     tk.Label(frm, text="...").pack(side=tk.LEFT)
-    frm.pack()
+    frm.pack(anchor=tk.W)
 
     # page3 - About (License information) {{{2
     tk.Label(page3, text="TouchPad Tuner").pack()
