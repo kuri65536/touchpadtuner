@@ -45,7 +45,7 @@ class XInputDB(object):  # {{{1
     cmd_bin = "/usr/bin/xinput"
     cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
     cmd_int = "set-int-prop"
-    cmd_flt = cmd_bin + " set-float-prop {} {} {} {}"
+    cmd_flt = "set-float-prop"
     cmd_atm = cmd_bin + " set-atomt-prop {} {} {} {}"
 
     cmd_wat = "query-state"
@@ -129,7 +129,7 @@ class XInputDB(object):  # {{{1
         seq = self.prop_get(key)
         if v is not None:
             org = seq[idx]
-            seq[idx] = "{}".format(v)
+            seq[idx] = "{:f}".format(v)
             if func(seq):
                 cmd = [self.cmd_bin, self.cmd_flt, str(self.dev),
                        str(key)]
@@ -147,7 +147,7 @@ class XInputDB(object):  # {{{1
         return self.prop_i8(290, i, v)
 
     def tapdurs(self, i: int, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i8(278, i, v)
+        return self.prop_i32(278, i, v)
 
     def taptime(self, v: Optional[int]=None) -> int:  # {{{2
         return self.prop_i32(276, 0, v)
@@ -184,20 +184,26 @@ class XInputDB(object):  # {{{1
     def lckdragstimeout(self, v: Optional[int]=None) -> int:  # {{{2
         return self.prop_i32(289, 0, v)
 
-    def cirscr(self, v: Optional[bool]=None) -> int:  # {{{2
-        return self.prop_i32(289, 0, v)
+    def cirscr(self, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(292, 0, v)
 
-    def cirpad(self, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(289, 0, v)
+    def cirtrg(self, v: Optional[int]=None) -> int:  # {{{2
+        def limit(seq: List[str]) -> bool:
+            cur = int(seq[0])
+            return 0 <= cur <= 8
+        return self.prop_i8(294, 0, v, limit)
 
-    def cirdis(self, v: Optional[float]=None) -> int:  # {{{2
-        return self.prop_i32(289, 0, v)
+    def cirpad(self, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(295, 0, v)
+
+    def cirdis(self, v: Optional[float]=None) -> float:  # {{{2
+        return self.prop_flt(293, 0, v)
 
     def edges(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
         return self.prop_i32(274, i, v)
 
-    def edgescrs(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(274, i, v)
+    def edgescrs(self, i: int, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(284, i, v)
 
     def cstspd(self, i: int, v: Optional[float]=None) -> float:  # {{{2
         return self.prop_flt(298, i, v)
@@ -345,12 +351,23 @@ def options() -> Any:  # {{{1
 
 # gui {{{1
 class Gui(object):  # {{{1
+    class BoolVar(object):
+        def __init__(self):
+            self._val = tk.IntVar()
+
+        def get(self) -> bool:
+            return self._val.get() == 1
+
+        def set(self, v: bool) -> bool:
+            self._val.set(1 if v else 0)
+            return v
+
     def checkbox(self, parent: tk.Widget, title: str,  # {{{2
                  cur: bool) -> None:
-        ret = tk.IntVar()
-        ret.set(1 if cur else 0)
+        ret = Gui.BoolVar()
+        ret._val.set(1 if cur else 0)
         tk.Checkbutton(parent, text=title,
-                       variable=ret).pack(side=tk.LEFT)
+                       variable=ret._val).pack(side=tk.LEFT)
         return ret
 
     def slider(self, parent: tk.Widget, from_: int, to: int,  # {{{2
@@ -366,7 +383,14 @@ class Gui(object):  # {{{1
         ret = tk.DoubleVar()
         ret.set(cur)
         tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
-                 variable=ret).pack(side=tk.LEFT)
+                 variable=ret, resolution=0.01).pack(side=tk.LEFT)
+        return ret
+
+    def combobox(self, parent: tk.Widget, seq: List[str],  # {{{2
+                 cur: int) -> None:
+        ret = ttk.Combobox(parent, values=seq)
+        ret.current(cur)
+        ret.pack(side=tk.LEFT)
         return ret
 
     def callback_idle(self):  # {{{2
@@ -403,21 +427,50 @@ class Gui(object):  # {{{1
         xi.fingerhig(xiorg.db["fingerhig"])
         self.fingerhig.set(xiorg.db["fingerhig"])
 
-        xi._horz2fingerscroll.set(1 if xiorg.db["horz2fingerscroll"] else 0)
-        xi._vert2fingerscroll.set(1 if xiorg.db["vert2fingerscroll"] else 0)
+        xi._horz2fingerscroll.set(xiorg.db["horz2fingerscroll"])
+        xi._vert2fingerscroll.set(xiorg.db["vert2fingerscroll"])
 
     def cmdapply(self) -> None:  # {{{2
         for i in range(3):
-            xi.clks(i, self.clks[i].current())
+            xi.clks(i, self.clks[i].current())  # 290
         for i in range(7):
-            xi.taps(i, self.taps[i].current())
-        xi.fingerlow(self.fingerlow.get())
+            xi.taps(i, self.taps[i].current())  # 291
+        for i in range(4):
+            xi.edges(i, xi._edges[i].get())  # 274
+        xi.fingerlow(self.fingerlow.get())  # 275
         xi.fingerhig(self.fingerhig.get())
-        xi.horz2fingerscroll(xi._horz2fingerscroll.get() == 1)
-        xi.vert2fingerscroll(xi._vert2fingerscroll.get() == 1)
-        xi.palmDetect(xi._palmDetect.get() == 1)
-        xi.palmDims(0, xi._palmDims[0].get())
+        xi.taptime(xi._taptime.get())  # 276
+        xi.tapmove(xi._tapmove.get())  # 277
+        for i in range(3):
+            xi.tapdurs(i, xi._tapdurs[i].get())  # 278
+        xi.twoprs(xi._twoprs.get())  # 281
+        xi.twowid(xi._twowid.get())  # 282
+        for i in range(2):
+            xi.scrdist(i, xi._scrdist[i].get())  # 283
+        for i in range(3):
+            xi.edgescrs(i, xi._edgescrs[i].get())  # 284
+        xi.horz2fingerscroll(xi._horz2fingerscroll.get())  # 285
+        xi.vert2fingerscroll(xi._vert2fingerscroll.get())
+        for i in range(3):
+            xi.movespd(i, xi._movespd[i].get())  # 286
+        xi.lckdrags(xi._lckdrags.get())  # 288
+        xi.lckdragstimeout(xi._lckdragstimeout.get())  # 289
+        xi.cirscr(xi._cirscr.get())  # 292
+        xi.cirdis(xi._cirdis.get())  # 293
+        xi.cirtrg(xi._cirtrg.current())  # 294
+        xi.cirpad(xi._cirpad.get())  # 295
+        xi.palmDetect(xi._palmDetect.get())  # 296
+        xi.palmDims(0, xi._palmDims[0].get())  # 297
         xi.palmDims(1, xi._palmDims[1].get())
+        for i in range(2):
+            xi.cstspd(i, xi._cstspd[i].get())  # 298
+            # xi.prsmot(i, xi._prsmot[i].get())  # 299 TODO: ??? not work ???
+            xi.prsfct(i, xi._prsfct[i].get())  # 300
+        xi.gestures(xi._gestures.get())  # 303
+        for i in range(4):
+            xi.softareas(i, xi._softareas[i].get())  # 307
+        for i in range(2):
+            xi.noise(i, xi._noise[i].get())  # 308
 
     def cmdsave(self) -> None:  # {{{2
         xi.dump(opts.fnameOut, opts.fnameIn)
@@ -680,14 +733,10 @@ def buildgui(opts: Any) -> Tk:  # {{{1
 
     # page2 - two-fingers {{{2
     frm = tk.Frame(page2)
-    xi._vert2fingerscroll = tk.IntVar()
-    xi._horz2fingerscroll = tk.IntVar()
-    xi._vert2fingerscroll.set(1 if xi.vert2fingerscroll() else 0)
-    xi._horz2fingerscroll.set(1 if xi.vert2fingerscroll() else 0)
-    tk.Checkbutton(frm, text="2-Finger Scroll(Vert)",
-                   variable=xi._vert2fingerscroll).pack(side=tk.LEFT)
-    tk.Checkbutton(frm, text="2-Finger Scroll(Horz)",
-                   variable=xi._horz2fingerscroll).pack(side=tk.LEFT)
+    xi._vert2fingerscroll = gui.checkbox(frm, "2-Finger Scroll(Vert)",
+                                         xi.vert2fingerscroll())
+    xi._horz2fingerscroll = gui.checkbox(frm, "2-Finger Scroll(Horz)",
+                                         xi.horz2fingerscroll())
     frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page2)
@@ -743,15 +792,15 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Label(frm, text="distance").pack(side=tk.LEFT)
     xi._cirdis = gui.slider_flt(frm, 0.01, 100, xi.cirdis())
     tk.Label(frm, text="trigger").pack(side=tk.LEFT)
-    ttk.Combobox(frm, values=["0: All Edges",
-                              "1: Top Edge",
-                              "2: Top Right Corner",
-                              "3: Right Edge",
-                              "4: Bottom Right Corner",
-                              "5: Bottom Edge",
-                              "6: Bottom Left Corner",
-                              "7: Left Edge",
-                              "8: Top Left Corner"]).pack(side=tk.LEFT)
+    xi._cirtrg = gui.combobox(frm, ["0: All Edges",
+                                    "1: Top Edge",
+                                    "2: Top Right Corner",
+                                    "3: Right Edge",
+                                    "4: Bottom Right Corner",
+                                    "5: Bottom Edge",
+                                    "6: Bottom Left Corner",
+                                    "7: Left Edge",
+                                    "8: Top Left Corner"], xi.cirtrg())
     frm.pack(anchor=tk.W)
 
     # page6 - Misc {{{2
