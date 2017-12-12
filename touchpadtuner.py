@@ -52,6 +52,16 @@ class XInputDB(object):  # {{{1
 
     def __init__(self):
         self._palmDims = []  # type: List[tk.IntVar]
+        self._edges = []  # type: List[tk.IntVar]
+        self._edgescrs = []  # type: List[tk.IntVar]
+        self._movespd = []  # type: List[tk.DoubleVar]
+        self._scrdist = []  # type: List[tk.IntVar]
+        self._tapdurs = []  # type: List[tk.IntVar]
+        self._cstspd = []  # type: List[tk.DoubleVar]
+        self._prsmot = []  # type: List[tk.IntVar]
+        self._prsfct = []  # type: List[tk.DoubleVar]
+        self._noise = []  # type: List[tk.IntVar]
+        self._softareas = []  # type: List[tk.IntVar]
 
     @classmethod
     def determine_devid(cls) -> bool:
@@ -113,11 +123,37 @@ class XInputDB(object):  # {{{1
                 func: Callable[[List[str]], bool]=allok) -> bool:
         return self.prop_int("8", key, idx, v, func)
 
+    def prop_flt(self, key: int, idx: int,  # {{{2
+                 v: Optional[float]=None,
+                 func: Callable[[List[str]], bool]=allok) -> bool:
+        seq = self.prop_get(key)
+        if v is not None:
+            org = seq[idx]
+            seq[idx] = "{}".format(v)
+            if func(seq):
+                cmd = [self.cmd_bin, self.cmd_flt, str(self.dev),
+                       str(key)]
+                print("prop_flt: " + str(cmd + seq))
+                subprocess.call(cmd + seq)
+                seq = self.prop_get(key)
+            else:
+                seq[idx] = org
+        return float(seq[idx])
+
     def clks(self, i: int, v: Optional[int]=None) -> int:  # {{{2
         return self.prop_i8(291, i, v)
 
     def taps(self, i: int, v: Optional[int]=None) -> int:  # {{{2
         return self.prop_i8(290, i, v)
+
+    def tapdurs(self, i: int, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i8(278, i, v)
+
+    def taptime(self, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(276, 0, v)
+
+    def tapmove(self, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(277, 0, v)
 
     def fingerlow(self, v: Optional[int]=None) -> int:  # {{{2
         def limit(seq: List[str]) -> bool:
@@ -139,11 +175,62 @@ class XInputDB(object):  # {{{1
     def horz2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
         return self.prop_bool(285, 1, v)
 
+    def movespd(self, i: int, v: Optional[float]=None) -> float:  # {{{2
+        return self.prop_flt(286, i, v)
+
+    def lckdrags(self, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(288, 0, v)
+
+    def lckdragstimeout(self, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(289, 0, v)
+
+    def cirscr(self, v: Optional[bool]=None) -> int:  # {{{2
+        return self.prop_i32(289, 0, v)
+
+    def cirpad(self, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(289, 0, v)
+
+    def cirdis(self, v: Optional[float]=None) -> int:  # {{{2
+        return self.prop_i32(289, 0, v)
+
+    def edges(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(274, i, v)
+
+    def edgescrs(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(274, i, v)
+
+    def cstspd(self, i: int, v: Optional[float]=None) -> float:  # {{{2
+        return self.prop_flt(298, i, v)
+
+    def prsmot(self, i: int, v: Optional[int]=None) -> int:  # {{{2
+        return self.prop_i32(299, i, v)
+
+    def prsfct(self, i: int, v: Optional[float]=None) -> float:  # {{{2
+        return self.prop_flt(300, i, v)
+
     def palmDetect(self, v: Optional[bool]=None) -> bool:  # {{{2
         return self.prop_bool(296, 0, v)
 
     def palmDims(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
         return self.prop_i32(297, i, v)
+
+    def softareas(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(307, i, v)
+
+    def twoprs(self, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(281, 0, v)
+
+    def twowid(self, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(282, 0, v)
+
+    def scrdist(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(283, i, v)
+
+    def gestures(self, v: Optional[bool]=None) -> bool:  # {{{2
+        return self.prop_bool(303, 0, v)
+
+    def noise(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
+        return self.prop_i32(308, i, v)
 
     def props(self) -> Tuple[List[bool], List[str]]:  # {{{2
         cmd = [self.cmd_bin, self.cmd_wat, str(self.dev)]
@@ -269,6 +356,14 @@ class Gui(object):  # {{{1
     def slider(self, parent: tk.Widget, from_: int, to: int,  # {{{2
                cur: int) -> None:
         ret = tk.IntVar()
+        ret.set(cur)
+        tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
+                 variable=ret).pack(side=tk.LEFT)
+        return ret
+
+    def slider_flt(self, parent: tk.Widget, from_: float, to: float,  # {{{2
+                   cur: float) -> None:
+        ret = tk.DoubleVar()
         ret.set(cur)
         tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
                  variable=ret).pack(side=tk.LEFT)
@@ -479,24 +574,24 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     gui.taps = []  # type: List[ttk.Combobox]
     tk.Label(page1, text="Tap actions").pack(anchor=tk.W)
     frm = tk.Frame(page1)
-    frm.pack()
-    tk.Label(frm, text="RT").pack(side=tk.LEFT, padx=10)
+    frm.pack(anchor=tk.W)
+    tk.Label(frm, text="RT", width=10).pack(side=tk.LEFT, padx=10)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
     tk.Label(frm, text="RB").pack(side=tk.LEFT)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
     frm = tk.Frame(page1)
-    frm.pack()
-    tk.Label(frm, text="LT").pack(side=tk.LEFT, padx=10)
+    frm.pack(anchor=tk.W)
+    tk.Label(frm, text="LT", width=10).pack(side=tk.LEFT, padx=10)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
     tk.Label(frm, text="LB").pack(side=tk.LEFT)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
     frm = tk.Frame(page1)
-    frm.pack()
-    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
+    frm.pack(anchor=tk.W)
+    tk.Label(frm, text="1-Finger", width=10).pack(side=tk.LEFT, padx=10)
     gui.taps.append(ttk.Combobox(frm, values=seq))
     gui.taps[-1].pack(side=tk.LEFT)
     tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
@@ -518,7 +613,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Label(frm_, text="FingerHigh", width=10).pack(side=tk.LEFT)
     gui.fingerhig = tk.Scale(frm_, from_=1, to=255, orient=tk.HORIZONTAL)
     gui.fingerhig.pack(side=tk.LEFT, expand=True, fill="x")
-    frm_.pack(fill="x")
+    frm_.pack(fill="x", anchor=tk.W)
     gui.fingerlow.set(xi.fingerlow())
     gui.fingerhig.set(xi.fingerhig())
     gui.fingerlow.bind("<ButtonRelease-1>", gui.cmdfingerlow)
@@ -526,15 +621,15 @@ def buildgui(opts: Any) -> Tk:  # {{{1
 
     frm = tk.Frame(page1)
     tk.Label(frm, text="Tap Time", width=10).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._taptime = gui.slider(frm, 1, 255, xi.taptime())
     tk.Label(frm, text="Tap Move", width=10).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._tapmove = gui.slider(frm, 1, 255, xi.tapmove())
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page1)
     tk.Label(frm, text="Tap Durations", width=10).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=255, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(0)))
+    xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(1)))
+    xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(2)))
     frm.pack(anchor=tk.W)
 
     # page4 - Area {{{2
@@ -547,46 +642,40 @@ def buildgui(opts: Any) -> Tk:  # {{{1
 
     frm = tk.Frame(page4)
     tk.Label(frm, text="Edge-X").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(0)))
+    xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(1)))
     tk.Label(frm, text="Edge-y").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=1800, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=1800, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._edges.append(gui.slider(frm, 0, 1800, xi.edges(2)))
+    xi._edges.append(gui.slider(frm, 0, 1800, xi.edges(3)))
     frm.pack(anchor=tk.W)
 
     tk.Label(page4, text="Soft Button Areas "
-             "(RB=Right Button, MB=Middle Button)").pack()
+             "(RB=Right Button, MB=Middle Button)").pack(anchor=tk.W)
     frm = tk.Frame(page4)
-    tk.Label(frm, text="RB-Left").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Label(frm, text="RB-Right").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Label(frm, text="RB-Top").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Label(frm, text="RB-Bottom").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="RB-Left", width=10).pack(side=tk.LEFT, padx=10)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(0)))
+    tk.Label(frm, text="RB-Right", width=10).pack(side=tk.LEFT)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(1)))
+    tk.Label(frm, text="RB-Top", width=10).pack(side=tk.LEFT)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(2)))
+    tk.Label(frm, text="RB-Bottom", width=10).pack(side=tk.LEFT)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(3)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page4)
-    tk.Label(frm, text="MB-Left").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Label(frm, text="MB-Right").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Label(frm, text="MB-Top").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Label(frm, text="MB-Bottom").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0, to=3100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    tk.Label(frm, text="MB-Left", width=10).pack(side=tk.LEFT, padx=10)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(4)))
+    tk.Label(frm, text="MB-Right", width=10).pack(side=tk.LEFT)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(5)))
+    tk.Label(frm, text="MB-Top", width=10).pack(side=tk.LEFT)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(6)))
+    tk.Label(frm, text="MB-Bottom", width=10).pack(side=tk.LEFT)
+    xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(7)))
     frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page4)
-    xi._edgeVert = tk.IntVar()
-    xi._edgeHorz = tk.IntVar()
-    xi._edgeCoas = tk.IntVar()
-    tk.Checkbutton(frm, text="Edge scroll(Vert)",
-                   variable=xi._edgeVert).pack(side=tk.LEFT)
-    tk.Checkbutton(frm, text="Edge scroll(Horz)",
-                   variable=xi._edgeHorz).pack(side=tk.LEFT)
-    tk.Checkbutton(frm, text="Corner Coasting",
-                   variable=xi._edgeCoas).pack(side=tk.LEFT)
+    xi._edgescrs.append(gui.checkbox(frm, "Edge scroll(Vert)", xi.edgescrs(0)))
+    xi._edgescrs.append(gui.checkbox(frm, "Edge scroll(Horz)", xi.edgescrs(1)))
+    xi._edgescrs.append(gui.checkbox(frm, "Corner Coasting", xi.edgescrs(2)))
     frm.pack(anchor=tk.W)
 
     # page2 - two-fingers {{{2
@@ -603,56 +692,56 @@ def buildgui(opts: Any) -> Tk:  # {{{1
 
     frm = tk.Frame(page2)
     tk.Label(frm, text="Two-Finger Pressure").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._twoprs = gui.slider(frm, 1, 1000, xi.twoprs())
     tk.Label(frm, text="Two-Finger Width").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._twowid = gui.slider(frm, 1, 1000, xi.twowid())
     frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page2)
     tk.Label(frm, text="Scrolling Distance").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist(0)))
+    xi._scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist(1)))
     frm.pack(anchor=tk.W)
 
     # page5 - Misc {{{2
     frm = tk.Frame(page5)
     tk.Label(frm, text="Noise Cancel (x-y)").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._noise.append(gui.slider(frm, 1, 1000, xi.noise(0)))
+    xi._noise.append(gui.slider(frm, 1, 1000, xi.noise(1)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Move speed").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(0)))
+    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(1)))
+    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(2)))
+    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(3)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Pressure Motion").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(0)))
+    xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(1)))
     tk.Label(frm, text="Factor").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._prsfct.append(gui.slider(frm, 1, 1000, xi.prsfct(0)))
+    xi._prsfct.append(gui.slider(frm, 1, 1000, xi.prsfct(1)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Coasting speed").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=1000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._cstspd.append(gui.slider(frm, 1, 1000, xi.cstspd(0)))
+    xi._cstspd.append(gui.slider(frm, 1, 1000, xi.cstspd(1)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Locked Drags").pack(side=tk.LEFT)
-    tk.Checkbutton(frm, text="on").pack(side=tk.LEFT)
+    xi._lckdrags = gui.checkbox(frm, "on", xi.lckdrags())
     tk.Label(frm, text="timeout").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=1, to=100000, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
-    tk.Checkbutton(frm, text="gesture").pack(side=tk.LEFT)
+    xi._lckdragstimeout = gui.slider(frm, 1, 100000, xi.lckdragstimeout())
+    xi._gestures = gui.checkbox(frm, "gesture", xi.gestures())
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     tk.Label(frm, text="Circular scrolling").pack(side=tk.LEFT)
-    tk.Checkbutton(frm, text="on").pack(side=tk.LEFT)
-    tk.Checkbutton(frm, text="circular-pad").pack(side=tk.LEFT)
+    xi._cirscr = gui.checkbox(frm, "on", xi.cirscr())
+    xi._cirpad = gui.checkbox(frm, "circular-pad", xi.cirpad())
     tk.Label(frm, text="distance").pack(side=tk.LEFT)
-    tk.Scale(frm, from_=0.01, to=100, orient=tk.HORIZONTAL).pack(side=tk.LEFT)
+    xi._cirdis = gui.slider_flt(frm, 0.01, 100, xi.cirdis())
     tk.Label(frm, text="trigger").pack(side=tk.LEFT)
     ttk.Combobox(frm, values=["0: All Edges",
                               "1: Top Edge",
