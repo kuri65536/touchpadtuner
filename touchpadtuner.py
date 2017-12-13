@@ -39,20 +39,8 @@ def allok(seq: List[str]) -> bool:
     return True
 
 
-# xinput {{{1
-class XInputDB(object):  # {{{1
-    dev = 11
-    propsdb = {}  # type: Dict[str, int]
-    cmd_bin = "/usr/bin/xinput"
-    cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
-    cmd_int = "set-int-prop"
-    cmd_flt = "set-float-prop"
-    cmd_atm = cmd_bin + " set-atomt-prop {} {} {} {}"
-
-    cmd_wat = "query-state"
-
-    class NProp(object):
-        '''xinput list-props 11
+class NProp(object):  # {{{1
+    '''xinput list-props 11
         Device 'ELAN1201:00 04F3:3054 Touchpad':
         Device Enabled (140):                     1
         Coordinate Transformation Matrix (142):   1.0, 0.0, 0.0,
@@ -100,48 +88,61 @@ class XInputDB(object):  # {{{1
       x Device Product ID (267):                  1267, 12372
       x Device Node (266):                        "/dev/input/event8"
     '''
-        coordinate_transformation_matrix = 142
-        device_accel_profile = 270
-        device_accel_constant_deceleration = 271
-        device_accel_adaptive_deceleration = 272
-        device_accel_velocity_scaling = 273
-        edges = 274
-        finger = 275
-        tap_time = 276
-        tap_move = 277
-        tap_durations = 278
-        clickPad = 279
-        middle_button_timeout = 280
-        two_finger_pressure = 281
-        two_finger_width = 282
-        scrolling_distance = 283
-        edge_scrolling = 284
-        two_finger_scrolling = 285
-        move_speed = 286
-        off = 287
-        locked_drags = 288
-        locked_drags_timeout = 289
-        tap_action = 290
-        click_action = 291
-        circular_scrolling = 292
-        circular_scrolling_distance = 293
-        circular_scrolling_trigger = 294
-        circular_pad = 295
-        palm_detection = 296
-        palm_dimensions = 297
-        coasting_speed = 298
-        pressure_motion = 299
-        pressure_motion_factor = 300
-        resolution_detect = 301
-        grab_event_device = 302
-        gestures = 303
-        capabilities = 304
-        pad_resolution = 305
-        area = 306
-        soft_button_areas = 307
-        noise_cancellation = 308
-        device_product_id = 267
-        device_node = 266
+    coordinate_transformation_matrix = 142
+    device_accel_profile = 270
+    device_accel_constant_deceleration = 271
+    device_accel_adaptive_deceleration = 272
+    device_accel_velocity_scaling = 273
+    edges = 274
+    finger = 275
+    tap_time = 276
+    tap_move = 277
+    tap_durations = 278
+    clickPad = 279
+    middle_button_timeout = 280
+    two_finger_pressure = 281
+    two_finger_width = 282
+    scrolling_distance = 283
+    edge_scrolling = 284
+    two_finger_scrolling = 285
+    move_speed = 286
+    off = 287
+    locked_drags = 288
+    locked_drags_timeout = 289
+    tap_action = 290
+    click_action = 291
+    circular_scrolling = 292
+    circular_scrolling_distance = 293
+    circular_scrolling_trigger = 294
+    circular_pad = 295
+    palm_detection = 296
+    palm_dimensions = 297
+    coasting_speed = 298
+    pressure_motion = 299
+    pressure_motion_factor = 300
+    resolution_detect = 301
+    grab_event_device = 302
+    gestures = 303
+    capabilities = 304
+    pad_resolution = 305
+    area = 306
+    soft_button_areas = 307
+    noise_cancellation = 308
+    device_product_id = 267
+    device_node = 266
+
+
+# xinput {{{1
+class XInputDB(object):  # {{{1
+    dev = 11
+    propsdb = {}  # type: Dict[str, int]
+    cmd_bin = "/usr/bin/xinput"
+    cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
+    cmd_int = "set-int-prop"
+    cmd_flt = "set-float-prop"
+    cmd_atm = cmd_bin + " set-atomt-prop {} {} {} {}"
+
+    cmd_wat = "query-state"
 
     def __init__(self):
         self._palmDims = []  # type: List[tk.IntVar]
@@ -173,10 +174,10 @@ class XInputDB(object):  # {{{1
 
     @classmethod
     def createpropsdb(cls) -> bool:  # cls {{{2
-        for name in dir(cls.NProp):
+        for name in dir(NProp):
             if name.startswith("name"):
                 continue
-            v = getattr(cls.NProp, name)
+            v = getattr(NProp, name)
             if not isinstance(v, int):
                 continue
             cls.propsdb[name] = v
@@ -282,102 +283,102 @@ class XInputDB(object):  # {{{1
         return float(seq[idx])
 
     def clks(self, i: int, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i8(291, i, v)
+        return self.prop_i8(NProp.click_action, i, v)
 
     def taps(self, i: int, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i8(290, i, v)
+        return self.prop_i8(NProp.tap_action, i, v)
 
     def tapdurs(self, i: int, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(278, i, v)
+        return self.prop_i32(NProp.tap_durations, i, v)
 
     def taptime(self, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(276, 0, v)
+        return self.prop_i32(NProp.tap_time, 0, v)
 
     def tapmove(self, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(277, 0, v)
+        return self.prop_i32(NProp.tap_move, 0, v)
 
     def fingerlow(self, v: Optional[int]=None) -> int:  # {{{2
         def limit(seq: List[str]) -> bool:
             low = int(seq[0])
             hig = int(seq[1])
             return low < hig
-        return self.prop_i32(275, 0, v, limit)
+        return self.prop_i32(NProp.finger, 0, v, limit)
 
     def fingerhig(self, v: Optional[int]=None) -> int:  # {{{2
         def limit(seq: List[str]) -> bool:
             low = int(seq[0])
             hig = int(seq[1])
             return low > hig
-        return self.prop_i32(275, 1, v, limit)
+        return self.prop_i32(NProp.finger, 1, v, limit)
 
     def vert2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(285, 0, v)
+        return self.prop_bool(NProp.two_finger_scrolling, 0, v)
 
     def horz2fingerscroll(self, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(285, 1, v)
+        return self.prop_bool(NProp.two_finger_scrolling, 1, v)
 
     def movespd(self, i: int, v: Optional[float]=None) -> float:  # {{{2
-        return self.prop_flt(286, i, v)
+        return self.prop_flt(NProp.move_speed, i, v)
 
     def lckdrags(self, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(288, 0, v)
+        return self.prop_bool(NProp.locked_drags, 0, v)
 
     def lckdragstimeout(self, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(289, 0, v)
+        return self.prop_i32(NProp.locked_drags_timeout, 0, v)
 
     def cirscr(self, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(292, 0, v)
+        return self.prop_bool(NProp.circular_scrolling, 0, v)
 
     def cirtrg(self, v: Optional[int]=None) -> int:  # {{{2
         def limit(seq: List[str]) -> bool:
             cur = int(seq[0])
             return 0 <= cur <= 8
-        return self.prop_i8(294, 0, v, limit)
+        return self.prop_i8(NProp.circular_scrolling_trigger, 0, v, limit)
 
     def cirpad(self, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(295, 0, v)
+        return self.prop_bool(NProp.circular_pad, 0, v)
 
     def cirdis(self, v: Optional[float]=None) -> float:  # {{{2
-        return self.prop_flt(293, 0, v)
+        return self.prop_flt(NProp.circular_scrolling_distance, 0, v)
 
     def edges(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(274, i, v)
+        return self.prop_i32(NProp.edges, i, v)
 
     def edgescrs(self, i: int, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(284, i, v)
+        return self.prop_bool(NProp.edge_scrolling, i, v)
 
     def cstspd(self, i: int, v: Optional[float]=None) -> float:  # {{{2
-        return self.prop_flt(298, i, v)
+        return self.prop_flt(NProp.coasting_speed, i, v)
 
     def prsmot(self, i: int, v: Optional[int]=None) -> int:  # {{{2
-        return self.prop_i32(299, i, v)
+        return self.prop_i32(NProp.pressure_motion, i, v)
 
     def prsfct(self, i: int, v: Optional[float]=None) -> float:  # {{{2
-        return self.prop_flt(300, i, v)
+        return self.prop_flt(NProp.pressure_motion_factor, i, v)
 
     def palmDetect(self, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(296, 0, v)
+        return self.prop_bool(NProp.palm_detection, 0, v)
 
     def palmDims(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(297, i, v)
+        return self.prop_i32(NProp.palm_dimensions, i, v)
 
     def softareas(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(307, i, v)
+        return self.prop_i32(NProp.soft_button_areas, i, v)
 
     def twoprs(self, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(281, 0, v)
+        return self.prop_i32(NProp.two_finger_pressure, 0, v)
 
     def twowid(self, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(282, 0, v)
+        return self.prop_i32(NProp.two_finger_width, 0, v)
 
     def scrdist(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(283, i, v)
+        return self.prop_i32(NProp.scrolling_distance, i, v)
 
     def gestures(self, v: Optional[bool]=None) -> bool:  # {{{2
-        return self.prop_bool(303, 0, v)
+        return self.prop_bool(NProp.gestures, 0, v)
 
     def noise(self, i: int, v: Optional[int]=None) -> bool:  # {{{2
-        return self.prop_i32(308, i, v)
+        return self.prop_i32(NProp.noise_cancellation, i, v)
 
     def props(self) -> Tuple[List[bool], List[str]]:  # {{{2
         cmd = [self.cmd_bin, self.cmd_wat, str(self.dev)]
