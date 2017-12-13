@@ -238,7 +238,9 @@ class XInputDB(object):  # {{{1
             seq = ["1" if i else "0" for i in v]
             cmd = [self.cmd_bin, self.cmd_int, str(self.dev), str(key), "8"]
             print("prop_bool: " + str(cmd + seq))
-            subprocess.call(cmd + seq)
+            if not self.fDryrun:
+                subprocess.call(cmd + seq)
+            self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
         return True if seq[idx] == "1" else False
 
@@ -252,8 +254,9 @@ class XInputDB(object):  # {{{1
             cmd = [self.cmd_bin, self.cmd_int, str(self.dev),
                    str(key), typ]
             print("prop_i{}: ".format(typ) + str(cmd + seq))
-            subprocess.call(cmd + seq)
-            seq = self.prop_get(key)
+            if not self.fDryrun:
+                subprocess.call(cmd + seq)
+            self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
         return int(seq[idx])
 
@@ -277,8 +280,9 @@ class XInputDB(object):  # {{{1
             cmd = [self.cmd_bin, self.cmd_flt, str(self.dev),
                    str(key)]
             print("prop_flt: " + str(cmd + seq))
-            subprocess.call(cmd + seq)
-            seq = self.prop_get(key)
+            if not self.fDryrun:
+                subprocess.call(cmd + seq)
+            self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
         return float(seq[idx])
 
@@ -409,15 +413,6 @@ class XInputDB(object):  # {{{1
         vals = [_vals.get(i, 0) for i in range(max(_vals.keys()) + 1)]
         return btns, vals
 
-    def fetch(self) -> 'XInputDB':  # {{{2
-        self.db = {}
-        self.db[NProp.click_action] = [self.clks(i) for i in range(3)]
-        self.db[NProp.tap_action] = [self.taps(i) for i in range(7)]
-        self.db[NProp.finger] = [self.finger(i) for i in range(2)]
-        self.db[NProp.two_finger_scrolling] = [
-                self.twofingerscroll(i) for i in range(2)]
-        return self
-
     def apply(self) -> str:  # {{{2
         self.edges(0, [self._edges[i].get() for i in range(4)])  # 274
         self.finger(0, [self._finger[i].get() for i in range(3)])  # 275
@@ -448,7 +443,34 @@ class XInputDB(object):  # {{{1
         self.softareas(0, [self._softareas[i].get() for i in range(8)])  # 307
         self.noise(0, [self._noise[i].get() for i in range(2)])  # 308
 
-    def dump(self, fname: str, fnameIn: str) -> str:  # {{{2
+    def dump(self) -> List[List[str]]:  # {{{2
+        # from GUI.
+        self.fDryrun = True
+        self.cmdbuf = []
+
+        self.apply()
+        ret = [] + self.cmdbuf
+
+        self.fDryrun = False
+        self.cmdbuf = []
+        return ret
+
+    def dumps(self) -> str:  # {{{2
+        # from GUI.
+        self.fDryrun = True
+        self.cmdbuf = []
+        self.apply()
+        ret = ""
+        for line in self.cmdbuf:
+            ret += '\n' + ' '.join(line)
+        if len(ret) > 0:
+            ret = ret[1:]
+
+        self.fDryrun = False
+        self.cmdbuf = []
+        return ret
+
+    def save(self, fname: str, fnameIn: str) -> str:  # {{{2
         '''sample output {{{3
             # Example xorg.conf.d snippet that assigns the touchpad driver
             # to all touchpads. See xorg.conf.d(5) for more information on
@@ -505,7 +527,7 @@ class XInputDB(object):  # {{{1
 
 # {{{2
 xi = XInputDB()
-xiorg = XInputDB().fetch()
+cmdorg = []  # type: List[List[str]]
 
 
 # options {{{1
@@ -593,13 +615,9 @@ class Gui(object):  # {{{1
         self.fingerhig.set(vl + 1)
 
     def cmdrestore(self) -> None:  # {{{2
-        xi.fingerlow(xiorg.db["fingerlow"])
-        self.fingerlow.set(xiorg.db["fingerlow"])
-        xi.fingerhig(xiorg.db["fingerhig"])
-        self.fingerhig.set(xiorg.db["fingerhig"])
-
-        xi._horz2fingerscroll.set(xiorg.db["horz2fingerscroll"])
-        xi._vert2fingerscroll.set(xiorg.db["vert2fingerscroll"])
+        for cmd in cmdorg:
+            print("restore: " + str(cmd))
+            subprocess.call(cmd)
 
     def cmdapply(self) -> None:  # {{{2
         xi.apply()
@@ -612,7 +630,7 @@ class Gui(object):  # {{{1
 
 
 def buildgui(opts: Any) -> Tk:  # {{{1
-    global gui
+    global gui, cmdorg
     gui = Gui()
 
     root = gui.root = Tk()
@@ -883,9 +901,15 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Label(frm, text="...").pack(side=tk.LEFT)
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page6)
-    tk.Label(frm, text="XInput2 Keywords").pack(side=tk.LEFT)
-    txt = tk.Text(frm, height=10)
+    tk.Label(frm, text="XInput2 Keywords", width=20).pack(side=tk.LEFT)
+    txt = tk.Text(frm, height=3)
     txt.insert(tk.END, XInputDB.textprops())
+    txt.pack(side=tk.LEFT, fill="both", expand=True)
+    frm.pack(anchor=tk.W)
+    frm = tk.Frame(page6)
+    tk.Label(frm, text="Restore", width=20).pack(side=tk.LEFT)
+    txt = tk.Text(frm, height=3)
+    txt.insert(tk.END, xi.dumps())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
 
@@ -897,6 +921,7 @@ def buildgui(opts: Any) -> Tk:  # {{{1
               ).pack()  # command=gui.cmdreport).pack(anchor=tk.N)
 
     # pad.config(height=4)
+    cmdorg = xi.dump()
     return root
 
 
