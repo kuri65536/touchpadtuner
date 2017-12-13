@@ -42,6 +42,7 @@ def allok(seq: List[str]) -> bool:
 # xinput {{{1
 class XInputDB(object):  # {{{1
     dev = 11
+    propsdb = {}  # type: Dict[str, int]
     cmd_bin = "/usr/bin/xinput"
     cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
     cmd_int = "set-int-prop"
@@ -49,6 +50,98 @@ class XInputDB(object):  # {{{1
     cmd_atm = cmd_bin + " set-atomt-prop {} {} {} {}"
 
     cmd_wat = "query-state"
+
+    class NProp(object):
+        '''xinput list-props 11
+        Device 'ELAN1201:00 04F3:3054 Touchpad':
+        Device Enabled (140):                     1
+        Coordinate Transformation Matrix (142):   1.0, 0.0, 0.0,
+                                                  0.0, 1.0, 0.0,
+                                                  0.0, 0.0, 1.0
+        Device Accel Profile (270):               1
+        Device Accel Constant Deceleration (271): 2.500000
+        Device Accel Adaptive Deceleration (272): 1.000000
+   page Device Accel Velocity Scaling (273):      12.500000
+      4 Synaptics Edges (274):                    127, 3065, 98, 1726
+      1 Synaptics Finger (275):                   50, 100, 0
+      1 Synaptics Tap Time (276):                 180
+      1 Synaptics Tap Move (277):                 161
+      1 Synaptics Tap Durations (278):            180, 180, 100
+      x Synaptics ClickPad (279):                 1
+      x Synaptics Middle Button Timeout (280):    0
+      2 Synaptics Two-Finger Pressure (281):      282
+      2 Synaptics Two-Finger Width (282):         7
+      2 Synaptics Scrolling Distance (283):       73, 73
+      4 Synaptics Edge Scrolling (284):           1, 0, 0
+      2 Synaptics Two-Finger Scrolling (285):     1, 1
+      5 Synaptics Move Speed (286):               1.0, 1.75, 0.054407, 0.000000
+      x Synaptics Off (287):                      1
+      5 Synaptics Locked Drags (288):             0
+      5 Synaptics Locked Drags Timeout (289):     5000
+      1 Synaptics Tap Action (290):               2, 3, 0, 0, 1, 3, 2
+      1 Synaptics Click Action (291):             1, 3, 0
+      5 Synaptics Circular Scrolling (292):       0
+      5 Synaptics Circular Scrolling Distance (293): 0.100000
+      5 Synaptics Circular Scrolling Trigger (294):  0
+      5 Synaptics Circular Pad (295):             0
+      4 Synaptics Palm Detection (296):           0
+      4 Synaptics Palm Dimensions (297):          10, 200
+      5 Synaptics Coasting Speed (298):           20.000000, 50.000000
+      5 Synaptics Pressure Motion (299):          30, 160
+      5 Synaptics Pressure Motion Factor (300):   1.000000, 1.000000
+      x Synaptics Resolution Detect (301):        1
+      x Synaptics Grab Event Device (302):        0
+      5 Synaptics Gestures (303):                 1
+      6 Synaptics Capabilities (304):             1, 0, 0, 1, 1, 0, 0
+      6 Synaptics Pad Resolution (305):           31, 31
+      x Synaptics Area (306):                     0, 0, 0, 0
+      4 Synaptics Soft Button Areas (307):        1596, 0, 1495, 0, 0, 0, 0, 0
+      5 Synaptics Noise Cancellation (308):       18, 18
+      x Device Product ID (267):                  1267, 12372
+      x Device Node (266):                        "/dev/input/event8"
+    '''
+        coordinate_transformation_matrix = 142
+        device_accel_profile = 270
+        device_accel_constant_deceleration = 271
+        device_accel_adaptive_deceleration = 272
+        device_accel_velocity_scaling = 273
+        edges = 274
+        finger = 275
+        tap_time = 276
+        tap_move = 277
+        tap_durations = 278
+        clickPad = 279
+        middle_button_timeout = 280
+        two_finger_pressure = 281
+        two_finger_width = 282
+        scrolling_distance = 283
+        edge_scrolling = 284
+        two_finger_scrolling = 285
+        move_speed = 286
+        off = 287
+        locked_drags = 288
+        locked_drags_timeout = 289
+        tap_action = 290
+        click_action = 291
+        circular_scrolling = 292
+        circular_scrolling_distance = 293
+        circular_scrolling_trigger = 294
+        circular_pad = 295
+        palm_detection = 296
+        palm_dimensions = 297
+        coasting_speed = 298
+        pressure_motion = 299
+        pressure_motion_factor = 300
+        resolution_detect = 301
+        grab_event_device = 302
+        gestures = 303
+        capabilities = 304
+        pad_resolution = 305
+        area = 306
+        soft_button_areas = 307
+        noise_cancellation = 308
+        device_product_id = 267
+        device_node = 266
 
     def __init__(self):
         self._palmDims = []  # type: List[tk.IntVar]
@@ -64,7 +157,7 @@ class XInputDB(object):  # {{{1
         self._softareas = []  # type: List[tk.IntVar]
 
     @classmethod
-    def determine_devid(cls) -> bool:
+    def determine_devid(cls) -> bool:  # cls {{{2
         cmd = cls.cmd_bin + " list | grep -i TouchPad"
         curb = subprocess.check_output(cmd, shell=True)
         curs = curb.decode("utf-8").strip()
@@ -76,6 +169,54 @@ class XInputDB(object):  # {{{1
         curs = curs[3:]
         curs = curs.split("\t")[0]  # TODO: use regex for more robust operation
         ret = int(curs)
+        return ret
+
+    @classmethod
+    def createpropsdb(cls) -> bool:  # cls {{{2
+        for name in dir(cls.NProp):
+            if name.startswith("name"):
+                continue
+            v = getattr(cls.NProp, name)
+            if not isinstance(v, int):
+                continue
+            cls.propsdb[name] = v
+
+        cmd = [cls.cmd_bin, "list-props", str(cls.dev)]
+        curb = subprocess.check_output(cmd)
+        curs = curb.decode("utf-8").strip()
+        for line in curs.splitlines():
+            if "(" not in line:
+                continue
+            line = line.strip()
+            # print("createdb: {}".format(line))
+            n = line.index("(")
+            name = line[:n]
+            line = line[n:]
+            if ")" not in line:
+                continue
+            n = line.index(")")
+            line = line[:n].strip("( )")
+            # print("createdb: {}".format(line))
+            if not line.isdigit():
+                # TODO: log
+                continue
+            name = name.strip("( ").lower().replace(" ", "_")
+            if name.startswith("synaptics_"):
+                name = name[10:]
+            if name not in cls.propsdb:
+                # TODO: log
+                continue
+            # print("{:20s}: {:3d}".format(name, int(line)))
+            cls.propsdb[name] = int(line)
+        return False
+
+    @classmethod
+    def textprops(cls) -> str:  # cls {{{2
+        ret = ""
+        for name in cls.propsdb:
+            ret += "\n{:20s} = {:3d}".format(name, cls.propsdb[name])
+        if len(ret) > 0:
+            ret = ret[1:]
         return ret
 
     def prop_get(self, key) -> List[str]:  # {{{2
@@ -555,55 +696,6 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     frm3.pack(expand=1, fill="both")
 
     # sub pages {{{2
-    '''xinput list-props 11
-        Device 'ELAN1201:00 04F3:3054 Touchpad':
-        Device Enabled (140):                     1
-        Coordinate Transformation Matrix (142):   1.0, 0.0, 0.0,
-                                                  0.0, 1.0, 0.0,
-                                                  0.0, 0.0, 1.0
-        Device Accel Profile (270):               1
-        Device Accel Constant Deceleration (271): 2.500000
-        Device Accel Adaptive Deceleration (272): 1.000000
-   page Device Accel Velocity Scaling (273):      12.500000
-      4 Synaptics Edges (274):                    127, 3065, 98, 1726
-      1 Synaptics Finger (275):                   50, 100, 0
-      1 Synaptics Tap Time (276):                 180
-      1 Synaptics Tap Move (277):                 161
-      1 Synaptics Tap Durations (278):            180, 180, 100
-      x Synaptics ClickPad (279):                 1
-      x Synaptics Middle Button Timeout (280):    0
-      2 Synaptics Two-Finger Pressure (281):      282
-      2 Synaptics Two-Finger Width (282):         7
-      2 Synaptics Scrolling Distance (283):       73, 73
-      4 Synaptics Edge Scrolling (284):           1, 0, 0
-      2 Synaptics Two-Finger Scrolling (285):     1, 1
-      5 Synaptics Move Speed (286):               1.0, 1.75, 0.054407, 0.000000
-      x Synaptics Off (287):                      1
-      5 Synaptics Locked Drags (288):             0
-      5 Synaptics Locked Drags Timeout (289):     5000
-      1 Synaptics Tap Action (290):               2, 3, 0, 0, 1, 3, 2
-      1 Synaptics Click Action (291):             1, 3, 0
-      5 Synaptics Circular Scrolling (292):       0
-      5 Synaptics Circular Scrolling Distance (293): 0.100000
-      5 Synaptics Circular Scrolling Trigger (294):  0
-      5 Synaptics Circular Pad (295):             0
-      4 Synaptics Palm Detection (296):           0
-      4 Synaptics Palm Dimensions (297):          10, 200
-      5 Synaptics Coasting Speed (298):           20.000000, 50.000000
-      5 Synaptics Pressure Motion (299):          30, 160
-      5 Synaptics Pressure Motion Factor (300):   1.000000, 1.000000
-      x Synaptics Resolution Detect (301):        1
-      x Synaptics Grab Event Device (302):        0
-      5 Synaptics Gestures (303):                 1
-      6 Synaptics Capabilities (304):             1, 0, 0, 1, 1, 0, 0
-      6 Synaptics Pad Resolution (305):           31, 31
-      x Synaptics Area (306):                     0, 0, 0, 0
-      4 Synaptics Soft Button Areas (307):        1596, 0, 1495, 0, 0, 0, 0, 0
-      5 Synaptics Noise Cancellation (308):       18, 18
-      x Device Product ID (267):                  1267, 12372
-      x Device Node (266):                        "/dev/input/event8"
-    '''
-
     # page1 - basic {{{2
     # Click Action
     seq = ["Disabled", "Left-Click", "Middel-Click", "Right-Click"]
@@ -803,20 +895,28 @@ def buildgui(opts: Any) -> Tk:  # {{{1
                                     "8: Top Left Corner"], xi.cirtrg())
     frm.pack(anchor=tk.W)
 
-    # page6 - Misc {{{2
+    # page6 - Information {{{2
     frm = tk.Frame(page6)
-    tk.Label(frm, text="Capability").pack(side=tk.LEFT)
+    tk.Label(frm, text="Capability", width=20).pack(side=tk.LEFT)
     tk.Label(frm, text="...").pack(side=tk.LEFT)
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page6)
-    tk.Label(frm, text="Resolution [unit/mm]").pack(side=tk.LEFT)
+    tk.Label(frm, text="Resolution [unit/mm]", width=20).pack(side=tk.LEFT)
     tk.Label(frm, text="...").pack(side=tk.LEFT)
+    frm.pack(anchor=tk.W)
+    frm = tk.Frame(page6)
+    tk.Label(frm, text="XInput2 Keywords").pack(side=tk.LEFT)
+    txt = tk.Text(frm, height=10)
+    txt.insert(tk.END, XInputDB.textprops())
+    txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
 
     # page3 - About (License information) {{{2
     tk.Label(page3, text="TouchPad Tuner").pack()
     tk.Label(page3, text="Shimoda (kuri65536@hotmail.com)").pack()
     tk.Label(page3, text="License: Modified BSD, 2017").pack()
+    tk.Button(page3, text="Make log for thereport",  # TODO: align right
+              ).pack()  # command=gui.cmdreport).pack(anchor=tk.N)
 
     # pad.config(height=4)
     return root
@@ -846,6 +946,7 @@ def gui_canvas(inst: tk.Canvas, btns: List[str]) -> None:  # {{{2
 def main() -> int:  # {{{1
     global opts
     opts = options()
+    XInputDB.createpropsdb()
     root = buildgui(opts)
     root.after_idle(gui.callback_idle)
     root.mainloop()
