@@ -27,7 +27,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 '''
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Union
 import os
 import subprocess
 
@@ -601,7 +601,7 @@ class Gui(object):  # {{{1
         self.txt3.insert(0, "{}".format(vals[2]))
         self.txt4.insert(0, "{}".format(vals[3]))
         _btns = ["black" if i else "white" for i in btns]
-        gui_canvas(self.mouse, _btns, vals)
+        gui_canvas(self.mouse, _btns, vals, [])
         self.root.after(100, self.callback_idle)
 
     def cmdfingerlow(self, ev: tk.Event) -> None:  # {{{2
@@ -655,7 +655,9 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     gui.mouse = tk.Canvas(frm1, width=200, height=200)
     frm13 = ttk.Frame(frm1)
 
-    gui_canvas(gui.mouse, ["white", "white", "white"], ["0"] * 4)
+    gui_canvas(gui.mouse, ["white"] * 7, ["0"] * 4,
+               [[xi.edges(i) for i in range(4)],
+                [xi.softareas(i) for i in range(8)]])
 
     gui.test = tk.Text(frm11, width=23, height=7)
     gui.test.pack(padx=5, pady=5)
@@ -926,40 +928,84 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     return root
 
 
+_100 = 200
+
+
+def gui_scale(x: Union[str, float], y: Union[str, float]) -> Tuple[int, int]:
+    rx = int(x) * _100 / 3192
+    ry = int(y) * _100 / 1822
+    return rx, ry
+
+
+def gui_softarea(seq: List[int]) -> Tuple[int, int, int, int]:
+    x1, y1 = seq[0], seq[2]
+    x2, y2 = seq[1], seq[3]
+    if x1 == 0 and y1 == 0 and x2 == 0 and y2 == 0:
+        pass
+    else:
+        if x1 == 0:
+            x1 = 0
+        if y1 == 0:
+            y1 = 0
+        if x2 == 0:
+            x2 = 3192
+        if y2 == 0:
+            y2 = 1822
+    x1, y1 = gui_scale(x1, y1)
+    x2, y2 = gui_scale(x2, y2)
+    return x1, y1, x2, y2
+
+
 def gui_canvas(inst: tk.Canvas, btns: List[str],  # {{{2
-               vals: List[str]) -> None:
+               vals: List[str], prms: List[List[int]]) -> None:
     _20 = 20
     _35 = 35
+    _40 = 40
     _45 = 45
     _55 = 55
+    _60 = 60
     _65 = 65
     _80 = 80
-    _100 = 100
 
-    def scale(x: str, y: str) -> Tuple[int, int]:
-        rx = int(x) * _100 / 3192
-        ry = int(y) * _100 / 1822
-        return rx, ry
+    inst.create_rectangle(0, 0, _100, _100, fill='white')  # ,stipple='gray25')
+    if len(prms) > 0:
+        edges = prms[0]
+        gui.ex1, gui.ey1 = gui_scale(edges[0], edges[2])
+        gui.ex2, gui.ey2 = gui_scale(edges[1], edges[3])
+        # print("gui_canvas: edge: ({},{})-({},{})".format(x1, y1, x2, y2))
+        areas = prms[1]
+        gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2 = gui_softarea(areas[0:4])
+        gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2 = gui_softarea(areas[4:8])
+        print("gui_canvas: RB: ({},{})-({},{})".format(
+              gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2))
+        print("gui_canvas: MB: ({},{})-({},{})".format(
+              gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2))
+
+    if gui.s1x1 != gui.s1x2 and gui.s1y1 != gui.s1y2:
+        inst.create_rectangle(gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2,
+                              fill="green")  # area for RB
+    if gui.s2x1 != gui.s2x2 and gui.s2y1 != gui.s2y2:
+        inst.create_rectangle(gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2,
+                              fill="blue")  # area for MB
+    inst.create_rectangle(gui.ex1, gui.ey1, gui.ex2, gui.ey2,
+                          width=2)
 
     # +-++++++-+
     # | |||||| |  (60 - 30) / 3 = 10
-    inst.create_rectangle(0, 0, _100, _100, fill='white')  # ,stipple='gray25')
     inst.create_rectangle(_20, _20, _80, _80, fill='white')
     inst.create_rectangle(_35, _20, _45, _45, fill=btns[0])
     inst.create_rectangle(_45, _20, _55, _45, fill=btns[1])
     inst.create_rectangle(_55, _20, _65, _45, fill=btns[2])
     # inst.create_arc(_20, _20, _80, _40, style='arc', fill='white')
     # inst.create_line(_20, _40, _20, _80, _80, _80, _80, _40)
+    inst.create_rectangle(_40, _55, _60, _60, fill=btns[5])
+    inst.create_rectangle(_40, _60, _60, _65, fill=btns[6])
 
-    # TODO: draw mouse wheel as scroll button.
-    # TODO: draw edges
-    # TODO: draw soft areas
-    # TODO: palm detect
-    x, y = scale(vals[0], vals[1])  # TODO: change rect to circle
-    inst.create_rectangle(x - 3, y - 3, x + 3, y + 3, fill="black")
-    x, y = scale(vals[2], vals[3])  # TODO: change rect to circle
+    x, y = gui_scale(vals[0], vals[1])
+    inst.create_oval(x - 2, y - 2, x + 2, y + 2, fill="black")
+    x, y = gui_scale(vals[2], vals[3])
     x, y = x % _100, y % _100
-    inst.create_rectangle(x - 3, y - 3, x + 3, y + 3, fill="red")
+    inst.create_oval(x - 2, y - 2, x + 2, y + 2, fill="red")
 
 
 # main {{{1
