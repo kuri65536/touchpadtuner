@@ -180,13 +180,14 @@ class XInputDB(object):  # {{{1
     @classmethod
     def createpropsdb(cls) -> bool:  # cls {{{2
         for name in dir(NProp):
-            if name.startswith("name"):
+            if name.startswith("_"):
                 continue
             v = getattr(NProp, name)
             if not isinstance(v, int):
                 continue
             cls.propsdb[name] = v
 
+        n = 0
         cmd = [cls.cmd_bin, "list-props", str(cls.dev)]
         curb = subprocess.check_output(cmd)
         curs = curb.decode("utf-8").strip()
@@ -213,8 +214,9 @@ class XInputDB(object):  # {{{1
                 # TODO: log
                 continue
             # print("{:20s}: {:3d}".format(name, int(line)))
+            n += 1
             cls.propsdb[name] = int(line)
-        return False
+        return n < 1
 
     @classmethod
     def textprops(cls) -> str:  # cls {{{2
@@ -237,8 +239,8 @@ class XInputDB(object):  # {{{1
         if len(v) > 0:
             seq = ["1" if i else "0" for i in v]
             cmd = [self.cmd_bin, self.cmd_int, str(self.dev), str(key), "8"]
-            print("prop_bool: " + str(cmd + seq))
             if not self.fDryrun:
+                print("prop_bool: " + str(cmd + seq))
                 subprocess.call(cmd + seq)
             self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
@@ -253,8 +255,8 @@ class XInputDB(object):  # {{{1
         elif func(seq):
             cmd = [self.cmd_bin, self.cmd_int, str(self.dev),
                    str(key), typ]
-            print("prop_i{}: ".format(typ) + str(cmd + seq))
             if not self.fDryrun:
+                print("prop_i{}: ".format(typ) + str(cmd + seq))
                 subprocess.call(cmd + seq)
             self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
@@ -279,8 +281,8 @@ class XInputDB(object):  # {{{1
         elif func(seq):
             cmd = [self.cmd_bin, self.cmd_flt, str(self.dev),
                    str(key)]
-            print("prop_flt: " + str(cmd + seq))
             if not self.fDryrun:
+                print("prop_flt: " + str(cmd + seq))
                 subprocess.call(cmd + seq)
             self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
@@ -567,8 +569,10 @@ class Gui(object):  # {{{1
                cur: int) -> None:
         ret = tk.IntVar()
         ret.set(cur)
-        tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
-                 variable=ret).pack(side=tk.LEFT)
+        wid = tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
+                       variable=ret)
+        wid.pack(side=tk.LEFT)
+        self.lastwid = wid
         return ret
 
     def slider_flt(self, parent: tk.Widget, from_: float, to: float,  # {{{2
@@ -597,7 +601,7 @@ class Gui(object):  # {{{1
         self.txt3.insert(0, "{}".format(vals[2]))
         self.txt4.insert(0, "{}".format(vals[3]))
         _btns = ["black" if i else "white" for i in btns]
-        gui_canvas(self.mouse, _btns)
+        gui_canvas(self.mouse, _btns, vals)
         self.root.after(100, self.callback_idle)
 
     def cmdfingerlow(self, ev: tk.Event) -> None:  # {{{2
@@ -651,14 +655,11 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     gui.mouse = tk.Canvas(frm1, width=200, height=200)
     frm13 = ttk.Frame(frm1)
 
-    gui_canvas(gui.mouse, ["white", "white", "white"])
+    gui_canvas(gui.mouse, ["white", "white", "white"], ["0"] * 4)
 
-    pad = tk.Button(frm11, width=23, height=4)
-    pad.pack()
-    btn1 = tk.Button(frm11, width=10)
-    btn1.pack(side=tk.LEFT)
-    btn2 = tk.Button(frm11, width=10)
-    btn2.pack(side=tk.LEFT)
+    gui.test = tk.Text(frm11, width=23, height=7)
+    gui.test.pack(padx=5, pady=5)
+    gui.test.insert(tk.END, "Test field\n1\n2\n3\n4\nblah\nblah...")
 
     gui.txt1 = tk.Entry(frm13, width=10)
     gui.txt1.pack()
@@ -745,17 +746,17 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     frm_ = tk.Frame(page1)
     tk.Label(frm_, text="FingerLow", width=10).pack(side=tk.LEFT)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(0)))
+    gui.fingerlow = gui.lastwid
+    gui.lastwid.bind("<ButtonRelease-1>", gui.cmdfingerlow)
     # xii.fingerlow.pack(side=tk.LEFT, expand=True, fill="x")
     # frm_.pack(fill="x")
     # frm_ = tk.Frame(page1)
     tk.Label(frm_, text="FingerHigh", width=10).pack(side=tk.LEFT)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(1)))
+    gui.fingerhig = gui.lastwid
+    gui.lastwid.bind("<ButtonRelease-1>", gui.cmdfingerhig)
     # gui.fingerhig.pack(side=tk.LEFT, expand=True, fill="x")
     frm_.pack(fill="x", anchor=tk.W)
-    # gui.fingerlow.set(xi.fingerlow())
-    # gui.fingerhig.set(xi.fingerhig())
-    # gui.fingerlow.bind("<ButtonRelease-1>", gui.cmdfingerlow)
-    # gui.fingerhig.bind("<ButtonRelease-1>", gui.cmdfingerhig)
     v = tk.IntVar()
     v.set(0)
     xi._finger.append(v)  # dummy
@@ -925,7 +926,8 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     return root
 
 
-def gui_canvas(inst: tk.Canvas, btns: List[str]) -> None:  # {{{2
+def gui_canvas(inst: tk.Canvas, btns: List[str],  # {{{2
+               vals: List[str]) -> None:
     _20 = 20
     _35 = 35
     _45 = 45
@@ -933,6 +935,11 @@ def gui_canvas(inst: tk.Canvas, btns: List[str]) -> None:  # {{{2
     _65 = 65
     _80 = 80
     _100 = 100
+
+    def scale(x: str, y: str) -> Tuple[int, int]:
+        rx = int(x) * _100 / 3192
+        ry = int(y) * _100 / 1822
+        return rx, ry
 
     # +-++++++-+
     # | |||||| |  (60 - 30) / 3 = 10
@@ -943,6 +950,16 @@ def gui_canvas(inst: tk.Canvas, btns: List[str]) -> None:  # {{{2
     inst.create_rectangle(_55, _20, _65, _45, fill=btns[2])
     # inst.create_arc(_20, _20, _80, _40, style='arc', fill='white')
     # inst.create_line(_20, _40, _20, _80, _80, _80, _80, _40)
+
+    # TODO: draw mouse wheel as scroll button.
+    # TODO: draw edges
+    # TODO: draw soft areas
+    # TODO: palm detect
+    x, y = scale(vals[0], vals[1])  # TODO: change rect to circle
+    inst.create_rectangle(x - 3, y - 3, x + 3, y + 3, fill="black")
+    x, y = scale(vals[2], vals[3])  # TODO: change rect to circle
+    x, y = x % _100, y % _100
+    inst.create_rectangle(x - 3, y - 3, x + 3, y + 3, fill="red")
 
 
 # main {{{1
