@@ -1002,6 +1002,7 @@ def options() -> Any:  # {{{1
     from argparse import ArgumentParser
     p = ArgumentParser()
     p.add_argument('--device-id', '-d', type=int, default=0)
+    p.add_argument('--file-encoding', '-e', type=str, default="utf-8")
     opts = p.parse_args()
 
     if opts.device_id == 0:
@@ -1122,6 +1123,38 @@ class Gui(object):  # {{{1
 
     def cmdquit(self) -> None:  # {{{2
         self.root.quit()
+
+    def cmdreport(self) -> None:  # {{{2
+        import sys
+        import platform
+        from datetime import datetime
+        global opts
+
+        enc = opts.file_encoding
+        fname = datetime.now().strftime("report-%Y%m%d-%H%M%S.txt")
+        fp = open(fname, "at", encoding=enc)
+        bs = subprocess.check_output("uname -a", shell=True)
+        msg = bs.decode(enc)
+        fp.write(msg + "\n")
+        bs = subprocess.check_output("python3 -m platform", shell=True)
+        msg = bs.decode(enc)
+        fp.write(msg + "\n")
+        fp.write("Python: {}\n".format(str(sys.version_info)))
+        fp.write("Python: {} {}\n".format(
+            platform.python_build(), platform.python_compiler()))
+        bs = subprocess.check_output("xinput list", shell=True)
+        msg = bs.decode(enc)
+        fp.write(msg + "\n")
+        fp.write("--- current settings (in app)---\n")
+        fp.write(xi.dumps())
+        # TODO: dump initial settings
+        # xiorg.dump(fname)
+        fp.close()
+
+        from tkinter import messagebox
+        msg = "Report: {} was made,\n" \
+              "use this file to report a issue.".format(fname)
+        messagebox.showinfo("Make a Report", msg)
 
 
 def buildgui(opts: Any) -> Tk:  # {{{1
@@ -1420,8 +1453,8 @@ def buildgui(opts: Any) -> Tk:  # {{{1
     tk.Label(page3, text="TouchPad Tuner").pack()
     tk.Label(page3, text="Shimoda (kuri65536@hotmail.com)").pack()
     tk.Label(page3, text="License: Modified BSD, 2017").pack()
-    tk.Button(page3, text="Make log for thereport",  # TODO: align right
-              ).pack()  # command=gui.cmdreport).pack(anchor=tk.N)
+    tk.Button(page3, text="Make log for the report",  # TODO: align right
+              command=gui.cmdreport).pack()  # .pack(anchor=tk.N)
 
     # pad.config(height=4)
     cmdorg = xi.dump()
