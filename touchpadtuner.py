@@ -643,7 +643,7 @@ class XInputDB(object):  # {{{1
         return ret
 
     @classmethod
-    def createpropsdb(cls) -> bool:  # cls {{{2
+    def createpropsdb_defaults(cls) -> bool:  # cls {{{2
         for name in dir(NProp):
             if name.startswith("_"):
                 continue
@@ -651,7 +651,15 @@ class XInputDB(object):  # {{{1
             if not isinstance(v, int):
                 continue
             cls.propsdb[name] = v
+        return False
 
+    @classmethod
+    def createpropsdb(cls) -> bool:  # cls {{{2
+        if False:
+            cls.createpropsdb_defaults()
+        propnames = []
+        for name in dir(NProp):
+            propnames.append(name)
         n = 0
         cmd = [cls.cmd_bin, "list-props", str(cls.dev)]
         curb = subprocess.check_output(cmd)
@@ -670,13 +678,16 @@ class XInputDB(object):  # {{{1
             line = line[:n].strip("( )")
             # print("createdb: {}".format(line))
             if not line.isdigit():
-                # TODO: log
+                print("createprops: can't parse: " + line + "\n")
                 continue
-            name = name.strip("( ").lower().replace(" ", "_")
+            name = name.strip("( ").lower()
+            name = name.replace(" ", "_")
+            name = name.replace("-", "_")
             if name.startswith("synaptics_"):
                 name = name[10:]
-            if name not in cls.propsdb:
-                # TODO: log
+            if name not in propnames:  # cls.propsdb:
+                print("createprops: can't parse: {} is not "
+                      "the name of props".format(name))
                 continue
             # print("{:20s}: {:3d}".format(name, int(line)))
             n += 1
@@ -1006,7 +1017,11 @@ def options() -> Any:  # {{{1
     opts = p.parse_args()
 
     if opts.device_id == 0:
-        XInputDB.determine_devid()
+        ret = XInputDB.determine_devid()
+        if ret is True:
+            return None
+        print("synaptics was detected as {} device".format(ret))
+        XInputDB.dev = ret
     return opts
 
 
@@ -1145,10 +1160,17 @@ class Gui(object):  # {{{1
         bs = subprocess.check_output("xinput list", shell=True)
         msg = bs.decode(enc)
         fp.write(msg + "\n")
-        fp.write("--- current settings (in app)---\n")
+        bs = subprocess.check_output("xinput list-props {}".format(
+            XInputDB.dev), shell=True)
+        msg = bs.decode(enc)
+        fp.write(msg + "\n")
+        fp.write("\n\n--- current settings (in app)---\n")
         fp.write(xi.dumps())
-        # TODO: dump initial settings
-        # xiorg.dump(fname)
+        fp.write("\n\n--- initial settings (at app startup)---")
+        cmds = ""
+        for i in cmdorg:
+            cmds += "\n" + " ".join(i)
+        fp.write(cmds + "\n")
         fp.close()
 
         from tkinter import messagebox
@@ -1545,9 +1567,12 @@ def gui_canvas(inst: tk.Canvas, btns: List[str],  # {{{2
 def main() -> int:  # {{{1
     global opts
     opts = options()
+    if opts is None:
+        print("can't found Synaptics in xinput.")
+        return 1
     if XInputDB.createpropsdb():
-        # TODO: there is not synaptic pad and exit. need the message to user.
-        return 0
+        print("can't found Synaptics properties in xinput.")
+        return 2
     root = buildgui(opts)
     root.after_idle(gui.callback_idle)
     root.mainloop()
