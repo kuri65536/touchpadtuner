@@ -54,6 +54,14 @@ Development Environment
 I really don't know and don't have wayland environment.
 
 
+Hardwares
+-----------------------------------------
+
+| term        | description   |
+|:-----------:|:--------------|
+| ASUS E203NA | as development machine |
+
+
 License
 -----------------------------------------
 see the top of source code, it is Modified BSD.
