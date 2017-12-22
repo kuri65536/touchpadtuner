@@ -1,0 +1,3 @@
+
+def showinfo(title=None, message=None, **options) -> str: ...
+
