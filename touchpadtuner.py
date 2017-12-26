@@ -1133,7 +1133,7 @@ class Gui(object):  # {{{1
         return _ret
 
     def label2(self, parent: tk.Widget, txt: str, n: int,  # {{{2
-               **kw: Dict[str, Any]) -> None:  # {{{2
+               **kw: Any) -> None:  # {{{2
         if len(kw) < 1:
             kw["anchor"] = tk.W
         if "width" in kw:
@@ -1147,7 +1147,7 @@ class Gui(object):  # {{{1
         # ret.hint = NProp.hinttext[n]
 
     def label3(self, parent: tk.Widget, txt: str, n: int,  # {{{2
-               kw: Dict[str, Any]={}) -> None:  # {{{2
+               **kw: Any) -> None:  # {{{2
         if "side" not in kw:
             kw["side"] = tk.LEFT
         self.label2(parent, txt, n, **kw)
@@ -1374,7 +1374,7 @@ def buildgui(opts: Any) -> Gui:  # {{{1
     # Tap Threshold
     w = 10
     frm_ = tk.Frame(page1)
-    gui.label3(frm_, "FingerLow", NProp.finger, {"width": w})
+    gui.label3(frm_, "FingerLow", NProp.finger, width=w)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(0)))
     gui.fingerlow = gui.lastwid
     gui.lastwid.bind("<ButtonRelease-1>", gui.cmdfingerlow)
@@ -1391,13 +1391,13 @@ def buildgui(opts: Any) -> Gui:  # {{{1
     xi._finger.append(v)  # dummy
 
     frm = tk.Frame(page1)
-    gui.label3(frm, "Tap Time", NProp.tap_time, {"width": w})
+    gui.label3(frm, "Tap Time", NProp.tap_time, width=w)
     xi._taptime = gui.slider(frm, 1, 255, xi.taptime())
     tk.Label(frm, text="Tap Move", width=10).pack(side=tk.LEFT)
     xi._tapmove = gui.slider(frm, 1, 255, xi.tapmove())
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page1)
-    gui.label3(frm, "Tap Durations", NProp.tap_durations, {"width": w})
+    gui.label3(frm, "Tap Durations", NProp.tap_durations, width=w)
     xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(0)))
     xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(1)))
     xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(2)))
@@ -1477,20 +1477,19 @@ def buildgui(opts: Any) -> Gui:  # {{{1
     # page5 - Misc {{{2
     w = 13
     frm = tk.Frame(page5)
-    gui.label3(frm, "Noise Cancel (x-y)", NProp.noise_cancellation,
-               {"width": w})
+    gui.label3(frm, "Noise Cancel (x-y)", NProp.noise_cancellation, width=w)
     xi._noise.append(gui.slider(frm, 1, 1000, xi.noise(0)))
     xi._noise.append(gui.slider(frm, 1, 1000, xi.noise(1)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
-    gui.label3(frm, "Move speed", NProp.move_speed, {"width": w})
+    gui.label3(frm, "Move speed", NProp.move_speed, width=w)
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(0)))
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(1)))
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(2)))
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(3)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
-    gui.label3(frm, "Pressure Motion", NProp.pressure_motion, {"width": w})
+    gui.label3(frm, "Pressure Motion", NProp.pressure_motion, width=w)
     xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(0)))
     xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(1)))
     tk.Label(frm, text="Factor").pack(side=tk.LEFT)
@@ -1498,20 +1497,19 @@ def buildgui(opts: Any) -> Gui:  # {{{1
     xi._prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct(1)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
-    gui.label3(frm, "Coasting speed", NProp.coasting_speed, {"width": w})
+    gui.label3(frm, "Coasting speed", NProp.coasting_speed, width=w)
     xi._cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd(0)))
     xi._cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd(1)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
-    gui.label3(frm, "Locked Drags", NProp.locked_drags, {"width": w})
+    gui.label3(frm, "Locked Drags", NProp.locked_drags, width=w)
     xi._lckdrags = gui.checkbox(frm, "on", xi.lckdrags())
     tk.Label(frm, text="timeout").pack(side=tk.LEFT)
     xi._lckdragstimeout = gui.slider(frm, 1, 100000, xi.lckdragstimeout())
     xi._gestures = gui.checkbox(frm, "gesture", xi.gestures())
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
-    gui.label3(frm, "Circular scrolling", NProp.circular_scrolling,
-               {"width": w})
+    gui.label3(frm, "Circular scrolling", NProp.circular_scrolling, width=w)
     xi._cirscr = gui.checkbox(frm, "on", xi.cirscr())
     xi._cirpad = gui.checkbox(frm, "Circular-pad", xi.cirpad())
     gui.label3(frm, "  Distance", NProp.circular_scrolling_distance)
@@ -1650,7 +1648,8 @@ gui = None  # type: Optional[Gui]
 
 
 # main {{{1
-def main() -> int:  # {{{1
+def main():  # {{{1
+    # type: () -> int
     global gui, opts
     opts = options()
     if opts is None:

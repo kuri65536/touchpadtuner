@@ -33,24 +33,26 @@ import sys
 import os
 import subprocess
 
-if sys.version_info[0] == 2:
-    import Tkinter as tk
-    import ttk
-    import tkMessageBox as messagebox
-else:
-    import tkinter as tk
-    import tkinter.messagebox as messagebox
-    from tkinter import ttk
-
 try:
-    from typing import Any, Callable, Dict, List, Optional, Tuple
-    Any, Callable, Dict, List, Optional, Tuple
+    from typing import Any, Callable, Dict, IO, List, Optional, Text, Tuple
+    Any, Callable, Dict, IO, List, Optional, Text, Tuple
 except:
     pass
 
 
+if sys.version_info[0] == 3:
+    import tkinter as tk
+    import tkinter.messagebox as messagebox
+    from tkinter import ttk
+else:
+    import codecs
+    import Tkinter as tk
+    import ttk
+    import tkMessageBox as messagebox
+
+
 def allok(seq):
-    # type: (List[str]) -> bool
+    # type: (List[Text]) -> bool
     return True
 
 
@@ -148,7 +150,7 @@ class NProp(object):  # {{{1
     device_node = 266
 
     # hint text {{{2
-    hintnums = {}  # type: Dict[tk.Label, int]
+    hintnums = {}  # type: Dict[Text, int]
     # hint text {{{2
     hinttext = {
         edges: """ {{{2
@@ -622,7 +624,8 @@ class IntVar(object):
 
     def get(self):
         # type: () -> int
-        assert self._val is not None
+        if self._val is None:
+            return 0
         ret = int(self._val.get())
         return ret
 
@@ -668,16 +671,27 @@ class CmbVar(object):
         return ret
 
 
+def open_file(fname, mode):  # {{{2
+    # type: (str, str) -> IO[Any]
+    global opts
+    assert opts is not None
+    enc = opts.file_encoding
+    if sys.version_info[0] == 2:
+        return codecs.open(fname, mode, enc)
+    else:
+        return open(fname, mode + "t", encoding=enc)
+
+
 # xinput {{{1
 class XInputDB(object):  # {{{1
     # {{{2
     dev = 11
     propsdb = {}  # type: Dict[str, int]
-    cmd_bin = "/usr/bin/xinput"
-    cmd_shw = cmd_bin + " list-props {} | grep '({}):'"
-    cmd_int = "set-int-prop"
-    cmd_flt = "set-float-prop"
-    cmd_atm = cmd_bin + " set-atomt-prop {} {} {} {}"
+    cmd_bin = u"/usr/bin/xinput"
+    cmd_shw = cmd_bin + u" list-props {} | grep '({}):'"
+    cmd_int = u"set-int-prop"
+    cmd_flt = u"set-float-prop"
+    cmd_atm = cmd_bin + u" set-atomt-prop {} {} {} {}"
 
     cmd_wat = "query-state"
 
@@ -714,7 +728,7 @@ class XInputDB(object):  # {{{1
     @classmethod
     def determine_devid(cls):  # cls {{{2
         # type: () -> int
-        cmd = cls.cmd_bin + " list | grep -i TouchPad"
+        cmd = cls.cmd_bin + u" list | grep -i TouchPad"
         curb = subprocess.check_output(cmd, shell=True)
         curs = curb.decode("utf-8").strip()
         if curs == "":
@@ -757,7 +771,7 @@ class XInputDB(object):  # {{{1
             line = line.strip()
             # print("createdb: {}".format(line))
             n = line.index("(")
-            name = line[:n]
+            name = line[:n]  # type: ignore  ## TODO: fix for python2
             line = line[n:]
             if ")" not in line:
                 continue
@@ -792,7 +806,7 @@ class XInputDB(object):  # {{{1
         return ret
 
     def prop_get(self, key):  # {{{2
-        # type: (int) -> List[str]
+        # type: (int) -> List[Text]
         cmd = self.cmd_shw.format(self.dev, key)
         curb = subprocess.check_output(cmd, shell=True)
         curs = curb.decode("utf-8").strip()
@@ -803,31 +817,31 @@ class XInputDB(object):  # {{{1
                   v=[]):
         # type: (int, int, List[bool]) -> bool
         if len(v) > 0:
-            seq = ["1" if i else "0" for i in v]
-            cmd = [self.cmd_bin, self.cmd_int, str(self.dev), str(key), "8"]
+            seq = [u"1" if i else u"0" for i in v]
+            cmd = [self.cmd_bin, self.cmd_int, Text(self.dev), Text(key), u"8"]
             if not self.fDryrun:
-                print("prop_bool: " + str(cmd + seq))
+                print("prop_bool: {}".format(str(cmd + seq)))
                 subprocess.call(cmd + seq)
             self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
         return True if seq[idx] == "1" else False
 
     def prop_int(self,  # {{{2
-                 typ,  # type: str
+                 typ,  # type: Text
                  key,  # type: int
                  idx,  # type: int
                  v=[],  # type: List[int]
-                 func=allok  # type: Callable[[List[str]], bool]
+                 func=allok  # type: Callable[[List[Text]], bool]
                  ):
         # type: (...) -> int
-        seq = [str(i) for i in v]
+        seq = [Text(i) for i in v]
         if len(v) < 1:
             pass
         elif func(seq):
-            cmd = [self.cmd_bin, self.cmd_int, str(self.dev),
-                   str(key), typ]
+            cmd = [self.cmd_bin, self.cmd_int, Text(self.dev),
+                   Text(key), typ]
             if not self.fDryrun:
-                print("prop_i{}: ".format(typ) + str(cmd + seq))
+                print("prop_i{}: ".format(typ) + Text(cmd + seq))
                 subprocess.call(cmd + seq)
             self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
@@ -837,7 +851,7 @@ class XInputDB(object):  # {{{1
                  key,  # type: int
                  idx,  # type: int
                  v,  # type: List[int]
-                 func=allok  # type: Callable[[List[str]], bool]
+                 func=allok  # type: Callable[[List[Text]], bool]
                  ):
         # type: (...) -> int
         return self.prop_int("32", key, idx, v, func)
@@ -846,14 +860,14 @@ class XInputDB(object):  # {{{1
                 key,  # type: int
                 idx,  # type: int
                 v,  # type: List[int]
-                func=allok  # type: Callable[[List[str]], bool]
+                func=allok  # type: Callable[[List[Text]], bool]
                 ):
         # type: (...) -> int
         return self.prop_int("8", key, idx, v, func)
 
     def prop_flt(self, key, idx, v=[], func=allok):  # {{{2
-        # type: (int, int, List[float], Callable[[List[str]], bool]) -> float
-        seq = ["{:f}".format(i) for i in v]
+        # type: (int, int, List[float], Callable[[List[Text]], bool]) -> float
+        seq = [Text("{:f}").format(i) for i in v]
         if len(v) < 1:
             pass
         elif func(seq):
@@ -892,7 +906,7 @@ class XInputDB(object):  # {{{1
     def finger(self, i, v=[]):  # {{{2
         # type: (int, List[int]) -> int
         def limit(seq):
-            # type: (List[str]) -> bool
+            # type: (List[Text]) -> bool
             low = int(seq[0])
             hig = int(seq[1])
             return low < hig
@@ -923,7 +937,7 @@ class XInputDB(object):  # {{{1
     def cirtrg(self, v=None):  # {{{2
         # type: (Optional[int]) -> int
         def limit(seq):
-            # type: (List[str]) -> bool
+            # type: (List[Text]) -> bool
             cur = int(seq[0])
             return 0 <= cur <= 8
         return self.prop_i8(NProp.circular_scrolling_trigger, 0,
@@ -1056,13 +1070,14 @@ class XInputDB(object):  # {{{1
         return False
 
     def dump(self):  # {{{2
-        # type: () -> List[List[str]]
+        # type: () -> List[List[Text]]
         # from GUI.
         self.fDryrun = True
-        self.cmdbuf = []  # type: List[List[str]]
+        self.cmdbuf = []  # type: List[List[Text]]
 
         self.apply()
-        ret = self.cmdbuf.copy()  # type: List[List[str]]
+        # ret = self.cmdbuf.copy()  # type: List[List[str]]
+        ret = list(self.cmdbuf)
 
         self.fDryrun = False
         self.cmdbuf = []
@@ -1073,14 +1088,14 @@ class XInputDB(object):  # {{{1
         return {}
 
     def dumps(self):  # {{{2
-        # type: () -> Dict[NProp, Any]
+        # type: () -> Text
         # from GUI.
         self.fDryrun = True
         self.cmdbuf = []
         self.apply()
-        ret = ""
+        ret = u""
         for line in self.cmdbuf:
-            ret += '\n' + ' '.join(line)
+            ret += u'\n' + u' '.join(line)
         if len(ret) > 0:
             ret = ret[1:]
 
@@ -1151,7 +1166,7 @@ class XInputDB(object):  # {{{1
 
 # {{{2
 xi = XInputDB()
-cmdorg = []  # type: List[List[str]]
+cmdorg = []  # type: List[List[Text]]
 
 
 # options {{{1
@@ -1222,8 +1237,8 @@ class Gui(object):  # {{{1
             ret = tk.Label(parent, text=txt)
         ret.pack(**kw)
         ret.bind("<Button-1>", self.hint)
-        NProp.hintnums[ret] = n
-        # ret.hint = NProp.hinttext[n]
+        _id = Text(repr(ret))
+        NProp.hintnums[_id] = n
 
     def label3(self, parent, txt, n, **kw):  # {{{2
         # type: (tk.Widget, str, int, **Any) -> None
@@ -1235,9 +1250,10 @@ class Gui(object):  # {{{1
         # type: (tk.Event) -> None
         wid = getattr(ev, "widget")
         assert isinstance(wid, tk.Widget)
-        txt = getattr(wid, "hint", None)
-        if not isinstance(txt, str):
+        _id = Text(repr(wid))
+        if _id not in NProp.hintnums:
             return
+        txt = NProp.hinttext[NProp.hintnums[_id]]
         self.test.delete(1.0, tk.END)
         self.test.insert(tk.END, txt)
 
@@ -1300,9 +1316,9 @@ class Gui(object):  # {{{1
 
         assert opts is not None
         xi.save(opts.fnameOut, opts.fnameIn)
-        enc = opts.file_encoding
         fname = datetime.now().strftime("report-%Y%m%d-%H%M%S.txt")
-        fp = open(fname, "at", encoding=enc)
+        enc = opts.file_encoding
+        fp = open_file(fname, "a")
         bs = subprocess.check_output("uname -a", shell=True)
         msg = bs.decode(enc)
         fp.write(msg + "\n")
@@ -1310,27 +1326,32 @@ class Gui(object):  # {{{1
         msg = bs.decode(enc)
         fp.write(msg + "\n")
         fp.write("Python: {}\n".format(str(sys.version_info)))
-        fp.write("Python: {} {}\n".format(
-            platform.python_build(), platform.python_compiler()))
+        if sys.version_info[0] == 2:
+            sbld = platform.python_build()  # type: ignore
+            scmp = platform.python_compiler()  # type: ignore
+        else:
+            sbld = platform.python_build()
+            scmp = platform.python_compiler()
+        fp.write("Python: {} {}\n".format(sbld, scmp))
         bs = subprocess.check_output("xinput list", shell=True)
         msg = bs.decode(enc)
-        fp.write(msg + "\n")
+        fp.write(msg + u"\n")
         bs = subprocess.check_output("xinput list-props {}".format(
             XInputDB.dev), shell=True)
         msg = bs.decode(enc)
-        fp.write(msg + "\n")
-        fp.write("\n\n--- current settings (in app)---\n")
+        fp.write(msg + u"\n")
+        fp.write(u"\n\n--- current settings (in app)---\n")
         fp.write(xi.dumps())
-        fp.write("\n\n--- initial settings (at app startup)---")
-        cmds = ""
+        fp.write(u"\n\n--- initial settings (at app startup)---")
+        cmds = u""
         for i in cmdorg:
-            cmds += "\n" + " ".join(i)
+            cmds += u"\n" + u" ".join(i)
         fp.write(cmds + "\n")
         fp.close()
 
-        msg = "Report: {} was made,\n" \
-              "use this file to report a issue.".format(fname)
-        messagebox.showinfo("Make a Report", msg)
+        msg = u"Report: {} was made,\n" \
+              u"use this file to report a issue.".format(fname)
+        messagebox.showinfo(u"Make a Report", msg)
 
     def __init__(self, root):  # {{{2
         # type: (tk.Tk) -> None

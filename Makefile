@@ -4,6 +4,9 @@ mypy := venv/bin/mypy
 src3 := touchpadtuner.py
 src2 := touchpadtuner2.py
 path_typeshed := venv/lib/mypytypeshed
+flake8_3 := flake8
+# flake8_2 := /usr/bin/flake8
+flake8_2 := echo
 
 all: lint check test
 	echo "done."
@@ -28,10 +31,10 @@ check: .check2 .check3
 lint: .lint2 .lint3
 
 .lint3: $(src3)
-	flake8 touchpadtuner.py
+	$(flake8_3) touchpadtuner.py
 	if [ x$$? = x0 ]; then touch $@; fi
 .lint2: $(src2)
-	flake8 touchpadtuner2.py
+	$(flake8_2) touchpadtuner2.py
 	if [ x$$? = x0 ]; then touch $@; fi
 
 install_typeshed:
