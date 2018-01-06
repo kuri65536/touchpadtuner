@@ -30,8 +30,9 @@ class Test(unittest.TestCase):
         db[-1] = fname
         tgt.XInputDB.save(fnameOut, db)
         res = subprocess.check_output(["/usr/bin/diff", fname, fnameOut])
-        res = res.strip()
-        assert res == ""
+        _res = res.decode("utf-8")
+        _res = _res.strip()
+        assert _res == "", "must be same: {}".format(res)
 
     def test_save_11_override_fingerlow(self):  # {{{1
         fname = u"70-synaptics.conf"
@@ -57,6 +58,20 @@ class Test(unittest.TestCase):
         try:
             res = subprocess.check_output(["/usr/bin/diff", fname, fnameOut])
             Test.fail()  # 0 == no change was detected
+        except subprocess.CalledProcessError as ex:
+            res = ex.output
+        assert res != ""  # TODO(Shimoda): check more actual.
+
+    def test_save_21_override_clickfinger1(self):  # {{{1
+        fname = u"70-synaptics.conf"
+        fnameOut = u"70-synaptics.conf.through21"
+        db = tgt.XInputDB.read(fname)
+        db[-1] = fname
+        db[tgt.NProp.tap_action].vals = [0, 0, 0, 0, 1, 3, 2]
+        tgt.XInputDB.save(fnameOut, db)
+        try:
+            res = subprocess.check_output(["/usr/bin/diff", fname, fnameOut])
+            self.fail()  # 0 == no change was detected
         except subprocess.CalledProcessError as ex:
             res = ex.output
         assert res != ""  # TODO(Shimoda): check more actual.

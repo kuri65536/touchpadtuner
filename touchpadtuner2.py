@@ -56,6 +56,48 @@ def allok(seq):
     return True
 
 
+def parseInt(src):  # {{{1
+    # type: (str) -> Optional[int]
+    src = src.strip()
+    if src.startswith('"'):
+        src = src[1:]
+    src = src.strip()
+    if src.endswith('"'):
+        src = src[:-1]
+    src = src.strip()
+    try:
+        ret = int(src)
+    except:
+        return None
+    return ret
+
+
+def parseBool(src):
+    # type: (str) -> Optional[bool]
+    ret = parseInt(src)
+    if ret is None:
+        return None
+    if ret == 1:
+        return True
+    return False
+
+
+def parseFloat(src):
+    # type: (str) -> Optional[float]
+    src = src.strip()
+    if src.startswith('"'):
+        src = src[1:]
+    src = src.strip()
+    if src.endswith('"'):
+        src = src[:-1]
+    src = src.strip()
+    try:
+        ret = float(src)
+    except:
+        return None
+    return ret
+
+
 class NProp(object):  # {{{1
     '''xinput list-props 11 {{{2
         Device 'ELAN1201:00 04F3:3054 Touchpad':
@@ -149,7 +191,7 @@ class NProp(object):  # {{{1
     device_product_id = 267
     device_node = 266
 
-    # hint text {{{2
+    # hint numbers {{{2
     hintnums = {}  # type: Dict[Text, int]
     # hint text {{{2
     hinttext = {
@@ -614,6 +656,256 @@ Noise cancellation
        increases.
         '''
     }
+    xconfs = {  # {{{2
+        edges: (),
+        click_action: (("ClickFinger1", "{:d}"),
+                       ("ClickFinger2", "{:d}"),
+                       ("ClickFinger3", "{:d}")),
+        tap_action: (("RTCornerButton", "{:d}"),
+                     ("RBCornerButton", "{:d}"),
+                     ("LTCornerButton", "{:d}"),
+                     ("LBCornerButton", "{:d}"),
+                     ("TapButton1", "{:d}"),
+                     ("TapButton2", "{:d}"),
+                     ("TapButton3", "{:d}")),
+        finger: (("FingerLow", "{:d}"),
+                 ("FingerHigh", "{:d}"),
+                 ("FingerPress", "{:d}")),
+        tap_time: (("MaxTapMove", "{:d}"), ),
+        tap_durations: (("MaxTapTime", "{:d}"),
+                        ("MaxDoubleTapTime", "{:d}"),
+                        ("ClickTime", "{:d}"),
+                        ("SingleTapTimeout", "{:d}")),
+        0: ''' {{{2
+       Option "Device" "string"
+              This  option  specifies the device file in your "/dev" directory
+              which will be used to access the physical device.  Normally  you
+              should  use  something like "/dev/input/eventX", where X is some
+              integer.
+
+       Option "ClickPad" "boolean"
+              Whether  the  device  is  a  click  pad.  A click pad device has
+              button(s) integrated into the touchpad surface.  The  user  must
+              press  downward  on  the touchpad in order to generated a button
+              press. This property may be set automatically  if  a  click  pad
+              device  is detected at initialization time. Property: "Synaptics
+              ClickPad"
+
+       Option "Protocol" "string"
+              Specifies which kernel driver will be used by this driver.  This
+              is   the  list  of  supported  drivers  and  their  default  use
+              scenarios.
+
+              auto-dev   automatic, default (recommend)
+              event      Linux 2.6 kernel events
+              psaux      raw device access (Linux 2.4)
+              psm        FreeBSD psm driver
+
+       Option "SHMConfig" "boolean"
+              Switch on/off shared memory for run-time debugging. This  option
+              does not have an effect on run-time configuration anymore and is
+              only useful for hardware event debugging.
+
+       Option "FastTaps" "boolean"
+              Makes the driver react faster to a single tap,  but  also  makes
+              double   clicks  caused  by  double  tapping  slower.  Property:
+              "Synaptics Tap FastTap"
+        ''',
+        edge_scrolling: (("VertEdgeScroll", "{:b}"),
+                         ("HorizEdgeScroll", "{:b}"),
+                         ("CornerCoasting", " {:b}")),
+        two_finger_scrolling: (("VertTwoFingerScroll", "{:b}"),
+                               ("HorizTwoFingerScroll", "{:b}")),
+        scrolling_distance: (("VertScrollDelta", "{:d}"),
+                             ("HorizScrollDelta", "{:d}")),
+        99: '''
+       Option "EdgeMotionMinZ" "integer"
+              Finger  pressure  at  which  minimum  edge  motion speed is set.
+              Property: "Synaptics Edge Motion Pressure"
+
+       Option "EdgeMotionMaxZ" "integer"
+              Finger pressure at which  maximum  edge  motion  speed  is  set.
+              Property: "Synaptics Edge Motion Pressure"
+
+       Option "EdgeMotionMinSpeed" "integer"
+              Slowest setting for edge motion speed. Property: "Synaptics Edge
+              Motion Speed"
+
+       Option "EdgeMotionMaxSpeed" "integer"
+              Fastest setting for edge motion speed. Property: "Synaptics Edge
+              Motion Speed"
+        ''',
+        98: ''' {{{2
+       Option "EdgeMotionUseAlways" "boolean"
+              If  on,  edge motion is also used for normal movements.  If off,
+              edge motion is used only  when  dragging.  Property:  "Synaptics
+              Edge Motion Always"
+        ''',
+        move_speed: (("MinSpeed", "{:f}"),
+                     ("MaxSpeed", "{:f}"),
+                     ("AccelFactor", "{:f}"),
+                     ("TrackstickSpeed", "{:f}")),
+        pressure_motion: (("PressureMotionMinZ", "{:d}"),
+                          ("PressureMotionMaxZ", "{:d}")),
+        pressure_motion_factor: (("PressureMotionMinFactor", "{:d}"),
+                                 ("PressureMotionMaxFactor", "{:d}")),
+        3: ''' {{{2
+       Option "HorizHysteresis" "integer"
+              The  minimum  horizontal HW distance required to generate motion
+              events. Can be specified as  a  percentage.  Increase  if  noise
+              motion  is  a  problem  for you. Zero is disabled.  Default: 0.5
+              percent of the diagonal or (in case of  evdev)  the  appropriate
+              "fuzz" as advertised by the device.
+
+       Option "VertHysteresis" "integer"
+              The  minimum  vertical  HW  distance required to generate motion
+              events. See HorizHysteresis.
+
+       Option "UpDownScrolling" "boolean"
+              If on, the up/down buttons generate button 4/5 events.  If  off,
+              the  up  button  generates  a  double  click and the down button
+              generates a button 2 event. This option is  only  available  for
+              touchpads  with  physical  scroll buttons.  Property: "Synaptics
+              Button Scrolling"
+
+       Option "LeftRightScrolling" "boolean"
+              If on, the left/right buttons generate button  6/7  events.   If
+              off, the left/right buttons both generate button 2 events.  This
+              option is only available  for  touchpads  with  physical  scroll
+              buttons.  Property: "Synaptics Button Scrolling"
+
+       Option "UpDownScrollRepeat" "boolean"
+              If   on,   and  the  up/down  buttons  are  used  for  scrolling
+              (UpDownScrolling), these buttons will  send  auto-repeating  4/5
+              events,   with   the   delay   between   repeats  determined  by
+              ScrollButtonRepeat.  This option is only available for touchpads
+              with  physical  scroll  buttons.   Property:  "Synaptics  Button
+              Scrolling Repeat"
+
+       Option "LeftRightScrollRepeat" "boolean"
+              If on,  and  the  left/right  buttons  are  used  for  scrolling
+              (LeftRightScrolling), these buttons will send auto-repeating 6/7
+              events,  with  the   delay   between   repeats   determined   by
+              ScrollButtonRepeat.  This option is only available for touchpads
+              with  physical  scroll  buttons.   Property:  "Synaptics  Button
+              Scrolling Repeat"
+
+       Option "ScrollButtonRepeat" "integer"
+              The  number of milliseconds between repeats of button events 4-7
+              from the up/down/left/right scroll buttons.  This option is only
+              available for touchpads with physical scroll buttons.  Property:
+              "Synaptics Button Scrolling Time"
+
+       Option "EmulateMidButtonTime" "integer"
+              Maximum time (in  milliseconds)  for  middle  button  emulation.
+              Property: "Synaptics Middle Button Timeout"
+        ''',
+        two_finger_pressure: (("EmulateTwoFingerMinZ", "{:d}"), ),
+        two_finger_width: (("EmulateTwoFingerMinW", "{:d}"), ),
+        off: (("TouchpadOff", "{:d}"), ),
+        locked_drags: (("LockedDrags", "{:b}"), ),
+        locked_drags_timeout: (("LockedDragTimeout", "{:d}"), ),
+        circular_scrolling: (("CircularScrolling", "{:b}"), ),
+        circular_scrolling_distance: (("CircScrollDelta", "{:f}"), ),
+        circular_scrolling_trigger: (("CircScrollTrigger", "{:d}"), ),
+        circular_pad: (("CircularPad", "{:b}"), ),
+        palm_detection: (("PalmDetect", "{:b}"), ),
+        palm_dimensions: (("PalmMinWidth", "{:d}"),
+                          ("PalmMinZ", "{:d}")),
+        coasting_speed: (("CoastingSpeed", "{:f}"),
+                         ("CoastingFriction", "{:f}")),
+        grab_event_device: (("GrabEventDevice", "{:b}"), ),
+        gestures: (("TapAndDragGesture", "{:b}"), ),
+        resolution_detect: (("ResolutionDetect", "{:b}"), ),
+        97: (("VertResolution", "{:d}"),
+             ("HorizResolution", "{:d}")),
+        96: (("AreaLeftEdge", "{:d}"),
+             ("AreaRightEdge", "{:d}"),
+             ("AreaTopEdge", "{:d}"),
+             ("AreaBottomEdge", "{:d}")),
+        soft_button_areas: (("SoftButtonAreas",
+                             "{:d} {:d} {:d} {:d} {:d} {:d} {:d} {:d}"), ),
+        noise_cancellation: (("HorizonHysterisis", "{:d}"),
+                             ("VerticalHysterisis", "{:d}")),
+    }
+
+    def __init__(self, n, idx):  # {{{1
+        # type: (int, int) -> None
+        self.n = n
+        self.idx = idx
+        self.val = None  # type: Any
+        self.vals = []   # type: List[Any]
+
+    def compose(self, idx):  # {{{1
+        # type: (int) -> Text
+        assert self.n in NProp.xconfs
+        opts = NProp.xconfs[self.n]
+        assert 0 <= idx < len(opts)
+        opt, fmt = opts[idx]
+        fmt = (" " * 8) + 'Option "{}" "' + fmt + '"  # by touchpadtuner\n'
+        return fmt.format(opt, self.vals[idx])
+
+    @classmethod
+    def parse(cls, src):  # cls {{{1
+        # type: (Text) -> Optional[NProp]
+        _src = src.strip()
+        if _src.startswith("#"):
+            return None  # comment line
+        if not _src.lower().startswith("option "):
+            return None  # not option line.
+        _src = _src[8:].strip()  # remove 'Option' with starting '"'.
+        for key, opts in cls.xconfs.items():
+            if not isinstance(opts, tuple):
+                continue  # not supported key
+            for n, (opt, fmt) in enumerate(opts):
+                o = opt + '" '
+                if not _src.startswith(o):
+                    continue
+                _src = _src[len(o):]
+                ret = NProp(key, n)
+                v = cls.parse_xconf(fmt, _src)
+                if v is None:
+                    break
+                ret.val = v
+                ret.vals = [0] * (n + 1)
+                ret.vals[n] = v
+                return ret
+        return None
+
+    @classmethod
+    def parse_xconf(cls, fmt, _src):  # cls {{{1
+        # type: (Text, Text) -> Any
+        # TODO(Shimoda): remove the inline comment or ends '"'.
+        if fmt == "{:d}":
+            v = parseInt(_src)
+            return v
+        elif fmt == "{:b}":
+            v = parseBool(_src)
+            return v
+        elif fmt == "{:f}":
+            v = parseFloat(_src)
+            return v
+        # else:
+        #     assert False, "xconfs fmt {} not implemented".format(fmt)
+
+        seq = fmt.split(" ")
+        if seq[0] == "{:d}":
+            func = parseInt
+        elif seq[0] == "{:b}":
+            func = parseBool
+        elif seq[0] == "{:f}":
+            func = parseFloat
+
+        ret = []  # type: List[Any]
+        for n, term in enumerate(_src.split(" ")):
+            if n >= len(seq):
+                return ret
+            v = func(term)
+            if v is None:
+                # TODO(Shimoda): log error messsage.
+                return None
+            ret.append(v)
+        return ret
 
 
 # wrapper for mypy {{{1
@@ -1104,12 +1396,32 @@ class XInputDB(object):  # {{{1
         return ret
 
     @classmethod
-    def read(cls, fname):  # cls {{{2
-        # type: (str) -> Dict[NProp, Any]
-        return {}
+    def read(cls, fname):  # cls {{{1
+        # type: (str) -> Dict[int, NProp]
+        ret = {}  # type: Dict[int, NProp]
+        fp = open_file(fname, "r")
+        for i, line in enumerate(fp):
+            prop = NProp.parse(line)
+            if prop is None:
+                continue  # just ignore that line could not be parsed.
+            if prop.n in ret:
+                dst = ret[prop.n]
+            else:
+                # merge prop.
+                ret[prop.n] = prop
+                dst = prop
+            if prop.idx < len(dst.vals):
+                dst.vals[prop.idx] = prop.val
+            else:
+                l = prop.idx - len(dst.vals)
+                seq = ([0] * l) if l > 0 else []
+                seq.append(prop.val)
+                dst.vals += seq
+        return ret
 
-    def save(self, fname, fnameIn):  # {{{2
-        # type: (str, str) -> str
+    @classmethod
+    def save(cls, fname, db):  # cls {{{1
+        # type: (str, Dict[int, NProp]) -> bool
         '''sample output {{{3
             # Example xorg.conf.d snippet that assigns the touchpad driver
             # to all touchpads. See xorg.conf.d(5) for more information on
@@ -1151,17 +1463,34 @@ class XInputDB(object):  # {{{1
                         "58% 0 0 15% 42% 58% 0 15%"
             EndSection }}}
         '''
-        db = XInputDB.read(fname)
-        db.update(self.dumpdb())
+        fnameIn = db[-1]
+        assert isinstance(fnameIn, Text)
+        fp = open_file(fname, "w")
+        fi = open_file(fnameIn, "r")
+        for i, line in enumerate(fi):
+            prop = NProp.parse(line)
+            if prop is None:
+                fp.write(line)
+                continue
+            if prop.n not in db:
+                fp.write(line)
+                continue
+            # TODO(Shimoda): append the comment after compose.
+            if prop.val == db[prop.n].vals[prop.idx]:
+                fp.write(line)
+                continue
+            line = db[prop.n].compose(prop.idx)
+            fp.write(line)
+        fi.close()
+        fp.close()
 
-        ret = ""
         # ret += self.dump_line_int("FingerLow", db.fingerlow())
         # ret += self.dump_line_int("FingerHigh", db.fingerhig())
         # ret += self.dump_line_bool("VertTwoFingerScroll",
         #                            db.vert2fingerscroll())
         # ret += self.dump_line_bool("HorizTwoFingerScroll",
         #                            db.horz2fingerscroll())
-        return ret
+        return False
 
 
 # {{{2
@@ -1301,7 +1630,9 @@ class Gui(object):  # {{{1
     def cmdsave(self):  # {{{2
         # type: () -> None
         assert opts is not None
-        xi.save(opts.fnameOut, opts.fnameIn)
+        db = XInputDB.read(opts.fname)
+        db[-1] = opts.fname
+        XInputDB.save(opts.fnameOut, db)
 
     def cmdquit(self):  # {{{2
         # type: () -> None
@@ -1315,7 +1646,6 @@ class Gui(object):  # {{{1
         global opts
 
         assert opts is not None
-        xi.save(opts.fnameOut, opts.fnameIn)
         fname = datetime.now().strftime("report-%Y%m%d-%H%M%S.txt")
         enc = opts.file_encoding
         fp = open_file(fname, "a")
