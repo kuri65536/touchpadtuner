@@ -3,16 +3,17 @@
 mypy := venv/bin/mypy
 src3 := touchpadtuner.py
 src2 := touchpadtuner2.py
+test3 := test.py
 path_typeshed := venv/lib/mypytypeshed
 flake8_3 := flake8
 # flake8_2 := /usr/bin/flake8
-flake8_2 := echo
+flake8_2 := echo  # just ignore flake8 for python2
 
 all: lint check test
 	echo "done."
 
 test: .test2 .test3
-.test3: $(src3)
+.test3: $(src3) $(test3)
 	python3 test.py
 	if [ x$$? = x0 ]; then touch $@; fi
 .test2: $(src2)

@@ -72,6 +72,28 @@ def parseInt(src):  # {{{1
     return ret
 
 
+def parseIntOrPercent(src):  # {{{1
+    # type: (str) -> Optional[int]
+    src = src.strip()
+    if src.startswith('"'):
+        src = src[1:]
+    src = src.strip()
+    if src.endswith('"'):
+        src = src[:-1]
+    src = src.strip()
+    if src.endswith("%"):
+        try:
+            ret = float(src[:-1])
+        except:
+            return None
+    else:
+        try:
+            ret = int(src)
+        except:
+            return None
+    return ret
+
+
 def parseBool(src):
     # type: (str) -> Optional[bool]
     ret = parseInt(src)
@@ -96,6 +118,69 @@ def parseFloat(src):
     except:
         return None
     return ret
+
+
+def compose_format(fmt, vals):  # {{{2
+    # type: (Text, List[Any]) -> Tuple[Text, List[Text]]
+    class Term(object):
+        def __init__(self):
+            self.sArg = ""
+            self.nArg = -2
+
+
+    ret1 = ""
+    seq = []
+    for ch in fmt:
+        if chEscape != "":
+            chEscape = ""
+            ret1 = ret1 + chEscape + ch
+            continue
+        if ch == "{":
+            term = Term()
+            ret1 += ch
+            continue
+        if term is None:
+            ret1 += ch
+            continue
+        if term.nArg == -2:  # not parsed
+            if ch == ":":
+                if not term.sArg.isdigit():
+                    term.nArg = -1  # invalid
+                else:
+                    term.nArg = int(term.sArg)
+                continue
+            if ch.isdigit():
+                term.sArg += ch
+                continue
+            term.nArg = -1  # not set
+        if ch == "}":
+            ret1 += ch
+            seq.append(term)
+            continue
+        if ch == "P":
+            term.type = "int or percent"
+        elif ch == "d":
+            term.type = "int"
+        elif ch == "f":
+            term.type = "float"
+        elif ch == "b":
+            term.type = "bool"
+        else:
+            assert False, "new type of compose: {}".format(ch)
+
+    terms = ["" for i in range(len(vals))]
+    for n, term in enumerate(seq):
+        if term.nArg > 0:
+            i = term.nArg
+        else:
+            i = n
+        if i >= len(terms):
+            assert False, "format arguments too much than params->{}".format(
+                    fmt)
+        terms[i] = term.compose(vals[i])
+    import pdb
+    pdb.set_trace()
+    return ret1, terms
 
 
 class NProp(object):  # {{{1
@@ -824,7 +909,7 @@ Noise cancellation
              ("AreaTopEdge", "{:d}"),
              ("AreaBottomEdge", "{:d}")),
         soft_button_areas: (("SoftButtonAreas",
-                             "{:d} {:d} {:d} {:d} {:d} {:d} {:d} {:d}"), ),
+                             "{:P} {:P} {:P} {:P} {:P} {:P} {:P} {:P}"), ),
         noise_cancellation: (("HorizonHysterisis", "{:d}"),
                              ("VerticalHysterisis", "{:d}")),
     }
@@ -834,7 +919,8 @@ Noise cancellation
         self.n = n
         self.idx = idx
         self.val = None  # type: Any
-        self.vals = []   # type: List[Any]
+        self.vals = [None] * len(NProp.xconfs[n])   # type: List[Any]
+        self.wrote = []  # type: List[int]
 
     def compose(self, idx):  # {{{1
         # type: (int) -> Text
@@ -843,7 +929,13 @@ Noise cancellation
         assert 0 <= idx < len(opts)
         opt, fmt = opts[idx]
         fmt = (" " * 8) + 'Option "{}" "' + fmt + '"  # by touchpadtuner\n'
-        return fmt.format(opt, self.vals[idx])
+        val = self.vals[idx]
+        if isinstance(val, (list, tuple)):
+            vals = []
+            # for v in val:
+            #
+            return fmt.format(opt, *val)
+        return fmt.format(opt, val)
 
     @classmethod
     def parse(cls, src):  # cls {{{1
@@ -867,7 +959,6 @@ Noise cancellation
                 if v is None:
                     break
                 ret.val = v
-                ret.vals = [0] * (n + 1)
                 ret.vals[n] = v
                 return ret
         return None
@@ -895,6 +986,10 @@ Noise cancellation
             func = parseBool
         elif seq[0] == "{:f}":
             func = parseFloat
+        elif seq[0] == "{:P}":
+            func = parseIntOrPercent
+        else:
+            raise RuntimeError("format:{} can't be parsed".format(seq[0]))
 
         ret = []  # type: List[Any]
         for n, term in enumerate(_src.split(" ")):
@@ -1127,6 +1222,8 @@ class XInputDB(object):  # {{{1
                  ):
         # type: (...) -> int
         seq = [Text(i) for i in v]
+        if len(seq) <= idx:
+            return int(0)
         if len(v) < 1:
             pass
         elif func(seq):
@@ -1410,13 +1507,7 @@ class XInputDB(object):  # {{{1
                 # merge prop.
                 ret[prop.n] = prop
                 dst = prop
-            if prop.idx < len(dst.vals):
-                dst.vals[prop.idx] = prop.val
-            else:
-                l = prop.idx - len(dst.vals)
-                seq = ([0] * l) if l > 0 else []
-                seq.append(prop.val)
-                dst.vals += seq
+            dst.vals[prop.idx] = prop.val
         return ret
 
     @classmethod
@@ -1461,13 +1552,28 @@ class XInputDB(object):  # {{{1
                     Option "SoftButtonAreas" "50% 0 82% 0 0 0 0 0"
                     Option "SecondarySoftButtonAreas"
                         "58% 0 0 15% 42% 58% 0 15%"
-            EndSection }}}
+            EndSection  # }}}
         '''
         fnameIn = db[-1]
         assert isinstance(fnameIn, Text)
         fp = open_file(fname, "w")
         fi = open_file(fnameIn, "r")
+        fSynapticSection = False
         for i, line in enumerate(fi):
+            if cls.is_end_section(line):
+                if fSynapticSection:
+                    cls.save_remains(fp, db)
+                fSynapticSection = False
+                fp.write(line)
+                continue
+            if cls.is_synaptic_section(line):
+                fSynapticSection = True
+                fp.write(line)
+                continue
+            if not fSynapticSection:
+                fp.write(line)
+                continue
+
             prop = NProp.parse(line)
             if prop is None:
                 fp.write(line)
@@ -1476,6 +1582,7 @@ class XInputDB(object):  # {{{1
                 fp.write(line)
                 continue
             # TODO(Shimoda): append the comment after compose.
+            prop.wrote.append(prop.idx)
             if prop.val == db[prop.n].vals[prop.idx]:
                 fp.write(line)
                 continue
@@ -1491,6 +1598,46 @@ class XInputDB(object):  # {{{1
         # ret += self.dump_line_bool("HorizTwoFingerScroll",
         #                            db.horz2fingerscroll())
         return False
+
+    @classmethod
+    def is_end_section(cls, line):  # cls {{{2
+        # type: (Text) -> bool
+        line = line.strip().lower()
+        return line.startswith("endsection")
+
+    @classmethod
+    def is_synaptic_section(cls, line):  # cls {{{2
+        # type: (Text) -> bool
+        line = line.strip().lower()
+        if not line.startswith('driver '):
+            return False
+        line = line[7:].strip()
+        if not line.startswith('"synaptics"'):
+            return False
+        return True
+
+    @classmethod
+    def save_remains(cls, fp, db):  # cls {{{2
+        # type: (IO[Text], Dict[int, NProp]) -> bool
+        fWrote = False
+        for n, prop in db.items():
+            if not isinstance(prop, NProp):
+                continue
+            for idx, v in enumerate(prop.vals):
+                if v is None:
+                    continue  # not specified clearly
+                if idx in prop.wrote:
+                    continue  # already output
+                if v == -1:
+                    continue  # not specified output
+                # TODO(Shimoda): check v is default
+                # if is_default(v):
+                #    continue
+                if not fWrote:
+                    fWrote = True
+                    fp.write(" " * 8 + "# output by touchpadtuner\n")
+                line = prop.compose(idx)
+                fp.write(line)
 
 
 # {{{2
