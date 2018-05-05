@@ -54,6 +54,25 @@ then reload the configuration file by command (or reboot your computer.)
 $ openbox-lubuntu --reconfigure
 ```
 
+### note-toggle-display.py
+same as touchpad.
+
+```
+    <keybind key="W-p">
+        <action name="Execute">
+            <command>bash -c 'eval $HOME/bin/note-toggle-display.py'</command>
+        </action>
+    </keybind>
+```
+
+my laptop (E203NA) FN+f8 key generate the events
+
+- `keydown: state 0x0, keycode 133`
+- `keydown: state 0x40, keycode 33`
+- `keyup: state 0x40, keycode 133`
+
+keycode 133 is Super_L, so keybind is `W-p` .
+
 
 TODO
 -----------------------------------------
