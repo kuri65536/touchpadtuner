@@ -32,10 +32,12 @@ from __future__ import print_function
 import sys
 import os
 import subprocess
+from logging import info
 
 try:
-    from typing import Any, Callable, Dict, IO, List, Optional, Text, Tuple
-    Any, Callable, Dict, IO, List, Optional, Text, Tuple
+    from typing import (Any, Callable, Dict, IO, List, Optional, Sized,
+                        Text, Tuple, Union, )
+    Any, Callable, Dict, IO, List, Optional, Text, Tuple, Union
 except:
     pass
 
@@ -56,14 +58,18 @@ def allok(seq):
     return True
 
 
+class Percent(object):
+    def __init__(self, rate):  # {{{1
+        # type: (float) -> None
+        self.rate = rate  # FIXME: decimal?
+
+    def __repr__(self):  # {{{1
+        # type: () -> Text
+        return "{}%".format(self.rate)
+
+
 def parseInt(src):  # {{{1
     # type: (str) -> Optional[int]
-    src = src.strip()
-    if src.startswith('"'):
-        src = src[1:]
-    src = src.strip()
-    if src.endswith('"'):
-        src = src[:-1]
     src = src.strip()
     try:
         ret = int(src)
@@ -73,25 +79,20 @@ def parseInt(src):  # {{{1
 
 
 def parseIntOrPercent(src):  # {{{1
-    # type: (str) -> Optional[int]
-    src = src.strip()
-    if src.startswith('"'):
-        src = src[1:]
-    src = src.strip()
-    if src.endswith('"'):
-        src = src[:-1]
+    # type: (str) -> Union[None, int, Percent]
     src = src.strip()
     if src.endswith("%"):
         try:
             ret = float(src[:-1])
+            return Percent(ret)
         except:
-            return None
-    else:
-        try:
-            ret = int(src)
-        except:
-            return None
-    return ret
+            pass
+        return None
+    try:
+        return int(src)
+    except:
+        pass
+    return None
 
 
 def parseBool(src):
@@ -107,12 +108,6 @@ def parseBool(src):
 def parseFloat(src):
     # type: (str) -> Optional[float]
     src = src.strip()
-    if src.startswith('"'):
-        src = src[1:]
-    src = src.strip()
-    if src.endswith('"'):
-        src = src[:-1]
-    src = src.strip()
     try:
         ret = float(src)
     except:
@@ -124,18 +119,24 @@ def compose_format(fmt, vals):  # {{{2
     # type: (Text, List[Any]) -> Tuple[Text, List[Text]]
     class Term(object):
         def __init__(self):
-            self.sArg = ""
+            # type: () -> None
+            self.type = u"undefined"
+            self.sArg = u""
             self.nArg = -2
 
+        def compose(self, arg):
+            # type: (Any) -> Text
+            return str(arg)
 
-    ret1 = ""
+    ret1 = u""
+    chEscape = u""
     seq = []
     for ch in fmt:
-        if chEscape != "":
-            chEscape = ""
+        if chEscape != u"":
+            chEscape = u""
             ret1 = ret1 + chEscape + ch
             continue
-        if ch == "{":
+        if ch == u"{":
             term = Term()
             ret1 += ch
             continue
@@ -143,7 +144,7 @@ def compose_format(fmt, vals):  # {{{2
             ret1 += ch
             continue
         if term.nArg == -2:  # not parsed
-            if ch == ":":
+            if ch == u":":
                 if not term.sArg.isdigit():
                     term.nArg = -1  # invalid
                 else:
@@ -153,20 +154,20 @@ def compose_format(fmt, vals):  # {{{2
                 term.sArg += ch
                 continue
             term.nArg = -1  # not set
-        if ch == "}":
+        if ch == u"}":
             ret1 += ch
             seq.append(term)
             continue
-        if ch == "P":
+        if ch == u"P":
             term.type = "int or percent"
-        elif ch == "d":
-            term.type = "int"
-        elif ch == "f":
-            term.type = "float"
-        elif ch == "b":
-            term.type = "bool"
+        elif ch == u"d":
+            term.type = u"int"
+        elif ch == u"f":
+            term.type = u"float"
+        elif ch == u"b":
+            term.type = u"bool"
         else:
-            assert False, "new type of compose: {}".format(ch)
+            assert False, u"new type of compose: {}".format(ch)
 
     terms = ["" for i in range(len(vals))]
     for n, term in enumerate(seq):
@@ -175,7 +176,7 @@ def compose_format(fmt, vals):  # {{{2
         else:
             i = n
         if i >= len(terms):
-            assert False, "format arguments too much than params->{}".format(
+            assert False, u"format arguments too much than params->{}".format(
                     fmt)
         terms[i] = term.compose(vals[i])
     import pdb
@@ -183,7 +184,25 @@ def compose_format(fmt, vals):  # {{{2
     return ret1, terms
 
 
+class PropFormat(Sized):  # {{{1
+    def __init__(self, *args):  # {{{1
+        # type: (Tuple[Text, Text]) -> None
+        self.fmts = args
+        if args[0][0] == "dummy":
+            self.fmts = ()
+
+    def __len__(self):  # {{{1
+        # type: () -> int
+        return len(self.fmts)
+
+    def __getitem__(self, idx):  # {{{1
+        # type: (Any) -> Tuple[Text, Text]
+        assert isinstance(idx, int)
+        return self.fmts[idx]
+
+
 class NProp(object):  # {{{1
+    # {{{1
     '''xinput list-props 11 {{{2
         Device 'ELAN1201:00 04F3:3054 Touchpad':
         Device Enabled (140):                     1
@@ -742,26 +761,26 @@ Noise cancellation
         '''
     }
     xconfs = {  # {{{2
-        edges: (),
-        click_action: (("ClickFinger1", "{:d}"),
-                       ("ClickFinger2", "{:d}"),
-                       ("ClickFinger3", "{:d}")),
-        tap_action: (("RTCornerButton", "{:d}"),
-                     ("RBCornerButton", "{:d}"),
-                     ("LTCornerButton", "{:d}"),
-                     ("LBCornerButton", "{:d}"),
-                     ("TapButton1", "{:d}"),
-                     ("TapButton2", "{:d}"),
-                     ("TapButton3", "{:d}")),
-        finger: (("FingerLow", "{:d}"),
-                 ("FingerHigh", "{:d}"),
-                 ("FingerPress", "{:d}")),
-        tap_time: (("MaxTapMove", "{:d}"), ),
-        tap_durations: (("MaxTapTime", "{:d}"),
-                        ("MaxDoubleTapTime", "{:d}"),
-                        ("ClickTime", "{:d}"),
-                        ("SingleTapTimeout", "{:d}")),
-        0: ''' {{{2
+        edges: PropFormat(("Edges", "{:d} {:d} {:d} {:d}")),
+        click_action: PropFormat(("ClickFinger1", "{:d}"),
+                                 ("ClickFinger2", "{:d}"),
+                                 ("ClickFinger3", "{:d}")),
+        tap_action: PropFormat(("RTCornerButton", "{:d}"),
+                               ("RBCornerButton", "{:d}"),
+                               ("LTCornerButton", "{:d}"),
+                               ("LBCornerButton", "{:d}"),
+                               ("TapButton1", "{:d}"),
+                               ("TapButton2", "{:d}"),
+                               ("TapButton3", "{:d}")),
+        finger: PropFormat(("FingerLow", "{:d}"),
+                           ("FingerHigh", "{:d}"),
+                           ("FingerPress", "{:d}")),
+        tap_time: PropFormat(("MaxTapMove", "{:d}")),
+        tap_durations: PropFormat(("MaxTapTime", "{:d}"),
+                                  ("MaxDoubleTapTime", "{:d}"),
+                                  ("ClickTime", "{:d}"),
+                                  ("SingleTapTimeout", "{:d}")),
+        0: PropFormat(("dummy", ''' {{{2
        Option "Device" "string"
               This  option  specifies the device file in your "/dev" directory
               which will be used to access the physical device.  Normally  you
@@ -795,15 +814,15 @@ Noise cancellation
               Makes the driver react faster to a single tap,  but  also  makes
               double   clicks  caused  by  double  tapping  slower.  Property:
               "Synaptics Tap FastTap"
-        ''',
-        edge_scrolling: (("VertEdgeScroll", "{:b}"),
-                         ("HorizEdgeScroll", "{:b}"),
-                         ("CornerCoasting", " {:b}")),
-        two_finger_scrolling: (("VertTwoFingerScroll", "{:b}"),
-                               ("HorizTwoFingerScroll", "{:b}")),
-        scrolling_distance: (("VertScrollDelta", "{:d}"),
-                             ("HorizScrollDelta", "{:d}")),
-        99: '''
+        ''')),
+        edge_scrolling: PropFormat(("VertEdgeScroll", "{:b}"),
+                                   ("HorizEdgeScroll", "{:b}"),
+                                   ("CornerCoasting", " {:b}")),
+        two_finger_scrolling: PropFormat(("VertTwoFingerScroll", "{:b}"),
+                                         ("HorizTwoFingerScroll", "{:b}")),
+        scrolling_distance: PropFormat(("VertScrollDelta", "{:d}"),
+                                       ("HorizScrollDelta", "{:d}")),
+        99: PropFormat(("dummy", '''
        Option "EdgeMotionMinZ" "integer"
               Finger  pressure  at  which  minimum  edge  motion speed is set.
               Property: "Synaptics Edge Motion Pressure"
@@ -819,22 +838,23 @@ Noise cancellation
        Option "EdgeMotionMaxSpeed" "integer"
               Fastest setting for edge motion speed. Property: "Synaptics Edge
               Motion Speed"
-        ''',
-        98: ''' {{{2
+        ''')),
+        98: PropFormat(("dummy", ''' {{{2
        Option "EdgeMotionUseAlways" "boolean"
               If  on,  edge motion is also used for normal movements.  If off,
               edge motion is used only  when  dragging.  Property:  "Synaptics
               Edge Motion Always"
-        ''',
-        move_speed: (("MinSpeed", "{:f}"),
-                     ("MaxSpeed", "{:f}"),
-                     ("AccelFactor", "{:f}"),
-                     ("TrackstickSpeed", "{:f}")),
-        pressure_motion: (("PressureMotionMinZ", "{:d}"),
-                          ("PressureMotionMaxZ", "{:d}")),
-        pressure_motion_factor: (("PressureMotionMinFactor", "{:d}"),
-                                 ("PressureMotionMaxFactor", "{:d}")),
-        3: ''' {{{2
+        ''')),
+        move_speed: PropFormat(("MinSpeed", "{:f}"),
+                               ("MaxSpeed", "{:f}"),
+                               ("AccelFactor", "{:f}"),
+                               ("TrackstickSpeed", "{:f}")),
+        pressure_motion: PropFormat(("PressureMotionMinZ", "{:d}"),
+                                    ("PressureMotionMaxZ", "{:d}")),
+        pressure_motion_factor:
+            PropFormat(("PressureMotionMinFactor", "{:d}"),
+                       ("PressureMotionMaxFactor", "{:d}")),
+        3: PropFormat(("dummy", ''' {{{2
        Option "HorizHysteresis" "integer"
               The  minimum  horizontal HW distance required to generate motion
               events. Can be specified as  a  percentage.  Increase  if  noise
@@ -884,34 +904,35 @@ Noise cancellation
        Option "EmulateMidButtonTime" "integer"
               Maximum time (in  milliseconds)  for  middle  button  emulation.
               Property: "Synaptics Middle Button Timeout"
-        ''',
-        two_finger_pressure: (("EmulateTwoFingerMinZ", "{:d}"), ),
-        two_finger_width: (("EmulateTwoFingerMinW", "{:d}"), ),
-        off: (("TouchpadOff", "{:d}"), ),
-        locked_drags: (("LockedDrags", "{:b}"), ),
-        locked_drags_timeout: (("LockedDragTimeout", "{:d}"), ),
-        circular_scrolling: (("CircularScrolling", "{:b}"), ),
-        circular_scrolling_distance: (("CircScrollDelta", "{:f}"), ),
-        circular_scrolling_trigger: (("CircScrollTrigger", "{:d}"), ),
-        circular_pad: (("CircularPad", "{:b}"), ),
-        palm_detection: (("PalmDetect", "{:b}"), ),
-        palm_dimensions: (("PalmMinWidth", "{:d}"),
-                          ("PalmMinZ", "{:d}")),
-        coasting_speed: (("CoastingSpeed", "{:f}"),
-                         ("CoastingFriction", "{:f}")),
-        grab_event_device: (("GrabEventDevice", "{:b}"), ),
-        gestures: (("TapAndDragGesture", "{:b}"), ),
-        resolution_detect: (("ResolutionDetect", "{:b}"), ),
-        97: (("VertResolution", "{:d}"),
-             ("HorizResolution", "{:d}")),
-        96: (("AreaLeftEdge", "{:d}"),
-             ("AreaRightEdge", "{:d}"),
-             ("AreaTopEdge", "{:d}"),
-             ("AreaBottomEdge", "{:d}")),
-        soft_button_areas: (("SoftButtonAreas",
-                             "{:P} {:P} {:P} {:P} {:P} {:P} {:P} {:P}"), ),
-        noise_cancellation: (("HorizonHysterisis", "{:d}"),
-                             ("VerticalHysterisis", "{:d}")),
+        ''')),
+        two_finger_pressure: PropFormat(("EmulateTwoFingerMinZ", "{:d}")),
+        two_finger_width: PropFormat(("EmulateTwoFingerMinW", "{:d}"), ),
+        off: PropFormat(("TouchpadOff", "{:d}"), ),
+        locked_drags: PropFormat(("LockedDrags", "{:b}"), ),
+        locked_drags_timeout: PropFormat(("LockedDragTimeout", "{:d}"), ),
+        circular_scrolling: PropFormat(("CircularScrolling", "{:b}"), ),
+        circular_scrolling_distance: PropFormat(("CircScrollDelta", "{:f}"), ),
+        circular_scrolling_trigger:
+            PropFormat(("CircScrollTrigger", "{:d}"), ),
+        circular_pad: PropFormat(("CircularPad", "{:b}"), ),
+        palm_detection: PropFormat(("PalmDetect", "{:b}"), ),
+        palm_dimensions: PropFormat(("PalmMinWidth", "{:d}"),
+                                    ("PalmMinZ", "{:d}")),
+        coasting_speed: PropFormat(("CoastingSpeed", "{:f}"),
+                                   ("CoastingFriction", "{:f}")),
+        grab_event_device: PropFormat(("GrabEventDevice", "{:b}"), ),
+        gestures: PropFormat(("TapAndDragGesture", "{:b}"), ),
+        resolution_detect: PropFormat(("ResolutionDetect", "{:b}"), ),
+        97: PropFormat(("VertResolution", "{:d}"),
+                       ("HorizResolution", "{:d}")),
+        96: PropFormat(("AreaLeftEdge", "{:d}"),
+                       ("AreaRightEdge", "{:d}"),
+                       ("AreaTopEdge", "{:d}"),
+                       ("AreaBottomEdge", "{:d}")),
+        soft_button_areas: PropFormat((
+            "SoftButtonAreas", "{:P} {:P} {:P} {:P} {:P} {:P} {:P} {:P}")),
+        noise_cancellation: PropFormat(("HorizonHysterisis", "{:d}"),
+                                       ("VerticalHysterisis", "{:d}")),
     }
 
     def __init__(self, n, idx):  # {{{1
@@ -921,6 +942,25 @@ Noise cancellation
         self.val = None  # type: Any
         self.vals = [None] * len(NProp.xconfs[n])   # type: List[Any]
         self.wrote = []  # type: List[int]
+        self.n_section = -1
+
+    @classmethod
+    def compose_format(cls, fmt, v):  # cls {{{1
+        # type: (Text, Any) -> Text
+        # TODO: more complex conversion.
+        fmt = fmt.replace("{:P}", "{:d}%")
+
+        if not isinstance(v, (tuple, list)):
+            return fmt.format(v)
+        _v = []  # type: List[Any]
+        for i in v:
+            if "{:d}" in fmt:
+                _v.append(int(i))
+            elif "{:f}" in fmt:
+                _v.append(float(i))
+            else:
+                _v.append(str(i))
+        return fmt.format(*_v)
 
     def compose(self, idx):  # {{{1
         # type: (int) -> Text
@@ -928,14 +968,10 @@ Noise cancellation
         opts = NProp.xconfs[self.n]
         assert 0 <= idx < len(opts)
         opt, fmt = opts[idx]
-        fmt = (" " * 8) + 'Option "{}" "' + fmt + '"  # by touchpadtuner\n'
+        fmt = ((" " * 8) + 'Option "' + opt + '" "' +
+               fmt + '"  # by touchpadtuner\n')
         val = self.vals[idx]
-        if isinstance(val, (list, tuple)):
-            vals = []
-            # for v in val:
-            #
-            return fmt.format(opt, *val)
-        return fmt.format(opt, val)
+        return self.compose_format(fmt, val)
 
     @classmethod
     def parse(cls, src):  # cls {{{1
@@ -947,13 +983,12 @@ Noise cancellation
             return None  # not option line.
         _src = _src[8:].strip()  # remove 'Option' with starting '"'.
         for key, opts in cls.xconfs.items():
-            if not isinstance(opts, tuple):
-                continue  # not supported key
-            for n, (opt, fmt) in enumerate(opts):
+            for n, (opt, fmt) in enumerate(opts.fmts):
                 o = opt + '" '
                 if not _src.startswith(o):
                     continue
                 _src = _src[len(o):]
+                _src = cls.parse_quote(_src)
                 ret = NProp(key, n)
                 v = cls.parse_xconf(fmt, _src)
                 if v is None:
@@ -964,22 +999,41 @@ Noise cancellation
         return None
 
     @classmethod
+    def parse_quote(cls, src):  # cls {{{1
+        # type: (Text) -> Text
+        ret = ""
+        f_quote, f_escape = False, False
+        for ch in src:
+            if not f_quote:
+                if ch == '"':
+                    f_quote = True
+                continue
+            if f_escape:
+                f_escape = False
+            elif ch == '\\':
+                f_escape = True
+                continue
+            elif ch == '"':
+                return ret
+            ret += ch
+        # can't parse in quote
+        return src
+
+    @classmethod
     def parse_xconf(cls, fmt, _src):  # cls {{{1
         # type: (Text, Text) -> Any
         # TODO(Shimoda): remove the inline comment or ends '"'.
         if fmt == "{:d}":
-            v = parseInt(_src)
-            return v
+            return parseInt(_src)
         elif fmt == "{:b}":
-            v = parseBool(_src)
-            return v
+            return parseBool(_src)
         elif fmt == "{:f}":
-            v = parseFloat(_src)
-            return v
+            return parseFloat(_src)
         # else:
         #     assert False, "xconfs fmt {} not implemented".format(fmt)
 
         seq = fmt.split(" ")
+        func = parseInt  # type: Callable[[Any], Any]
         if seq[0] == "{:d}":
             func = parseInt
         elif seq[0] == "{:b}":
@@ -1071,8 +1125,14 @@ def open_file(fname, mode):  # {{{2
 
 # xinput {{{1
 class XInputDB(object):  # {{{1
-    # {{{2
+    # {{{1
     dev = 11
+
+    f_section = False
+    n_section = 0
+    cur_section = ""
+    sections = {}  # type: Dict[int, Text]
+
     propsdb = {}  # type: Dict[str, int]
     cmd_bin = u"/usr/bin/xinput"
     cmd_shw = cmd_bin + u" list-props {} | grep '({}):'"
@@ -1084,6 +1144,8 @@ class XInputDB(object):  # {{{1
 
     def __init__(self):
         # type: () -> None
+        self.cmdbuf = []  # type: List[List[Text]]
+        self.fDryrun = True
         self._palmDims = []  # type: List[IntVar]
         self._edges = []  # type: List[IntVar]
         self._edgescrs = []  # type: List[BoolVar]
@@ -1147,6 +1209,8 @@ class XInputDB(object):  # {{{1
             cls.createpropsdb_defaults()
         propnames = []
         for name in dir(NProp):
+            if name.startswith("_"):
+                continue
             propnames.append(name)
         n = 0
         cmd = [cls.cmd_bin, "list-props", str(cls.dev)]
@@ -1207,7 +1271,7 @@ class XInputDB(object):  # {{{1
             seq = [u"1" if i else u"0" for i in v]
             cmd = [self.cmd_bin, self.cmd_int, Text(self.dev), Text(key), u"8"]
             if not self.fDryrun:
-                print("prop_bool: {}".format(str(cmd + seq)))
+                info("prop_bool: {}".format(str(cmd + seq)))
                 subprocess.call(cmd + seq)
             self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
@@ -1222,15 +1286,14 @@ class XInputDB(object):  # {{{1
                  ):
         # type: (...) -> int
         seq = [Text(i) for i in v]
-        if len(seq) <= idx:
-            return int(0)
+        assert len(seq) == 0 or (len(seq) > 0 and len(seq) > idx)
         if len(v) < 1:
             pass
         elif func(seq):
             cmd = [self.cmd_bin, self.cmd_int, Text(self.dev),
                    Text(key), typ]
             if not self.fDryrun:
-                print("prop_i{}: ".format(typ) + Text(cmd + seq))
+                info("prop_i{}: ".format(typ) + Text(cmd + seq))
                 subprocess.call(cmd + seq)
             self.cmdbuf.append(cmd + seq)
         seq = self.prop_get(key)
@@ -1426,7 +1489,7 @@ class XInputDB(object):  # {{{1
         vals = [_vals.get(i, 0) for i in range(max(_vals.keys()) + 1)]
         return btns, vals
 
-    def apply(self):  # {{{2
+    def apply(self):  # {{{1
         # type: () -> bool
         self.edges(0, [self._edges[i].get() for i in range(4)])  # 274
         self.finger(0, [self._finger[i].get() for i in range(3)])  # 275
@@ -1497,7 +1560,11 @@ class XInputDB(object):  # {{{1
         # type: (str) -> Dict[int, NProp]
         ret = {}  # type: Dict[int, NProp]
         fp = open_file(fname, "r")
+        cls.section_parser_clear()
         for i, line in enumerate(fp):
+            sec, id_name = cls.section_parser(line)
+            if sec < 0:
+                continue
             prop = NProp.parse(line)
             if prop is None:
                 continue  # just ignore that line could not be parsed.
@@ -1507,12 +1574,14 @@ class XInputDB(object):  # {{{1
                 # merge prop.
                 ret[prop.n] = prop
                 dst = prop
+            # TODO: split a prop to different section...
+            dst.n_section = sec
             dst.vals[prop.idx] = prop.val
         return ret
 
     @classmethod
-    def save(cls, fname, db):  # cls {{{1
-        # type: (str, Dict[int, NProp]) -> bool
+    def save(cls, fname, fnameIn, db):  # cls {{{1
+        # type: (Text, Text, Dict[int, NProp]) -> bool
         '''sample output {{{3
             # Example xorg.conf.d snippet that assigns the touchpad driver
             # to all touchpads. See xorg.conf.d(5) for more information on
@@ -1554,25 +1623,21 @@ class XInputDB(object):  # {{{1
                         "58% 0 0 15% 42% 58% 0 15%"
             EndSection  # }}}
         '''
-        fnameIn = db[-1]
-        assert isinstance(fnameIn, Text)
         fp = open_file(fname, "w")
         fi = open_file(fnameIn, "r")
+        p_sec = -1
+        cls.section_parser_clear()
         fSynapticSection = False
         for i, line in enumerate(fi):
-            if cls.is_end_section(line):
+            n_sec, cur_sec = cls.section_parser(line)
+            if n_sec < 0:
                 if fSynapticSection:
-                    cls.save_remains(fp, db)
+                    cls.save_remains(fp, db, p_sec)
                 fSynapticSection = False
                 fp.write(line)
                 continue
-            if cls.is_synaptic_section(line):
-                fSynapticSection = True
-                fp.write(line)
-                continue
-            if not fSynapticSection:
-                fp.write(line)
-                continue
+            p_sec = n_sec
+            fSynapticSection = True
 
             prop = NProp.parse(line)
             if prop is None:
@@ -1582,9 +1647,10 @@ class XInputDB(object):  # {{{1
                 fp.write(line)
                 continue
             # TODO(Shimoda): append the comment after compose.
-            prop.wrote.append(prop.idx)
+            import pdb; pdb.set_trace()
+            db[prop.n].wrote.append(prop.idx)
             if prop.val == db[prop.n].vals[prop.idx]:
-                fp.write(line)
+                fp.write(line)  # write original, just mark to db.
                 continue
             line = db[prop.n].compose(prop.idx)
             fp.write(line)
@@ -1600,10 +1666,30 @@ class XInputDB(object):  # {{{1
         return False
 
     @classmethod
+    def is_begin_of_section(cls, line):  # cls {{{2
+        # type: (Text) -> Text
+        line = line.strip().lower()
+        if not line.startswith('section '):
+            return ""
+        seq = line.split('"')
+        ret = seq[1]
+        return ret
+
+    @classmethod
     def is_end_section(cls, line):  # cls {{{2
         # type: (Text) -> bool
         line = line.strip().lower()
         return line.startswith("endsection")
+
+    @classmethod
+    def is_identifier(cls, line):  # cls {{{2
+        # type: (Text) -> Text
+        line = line.strip().lower()
+        if not line.startswith("identifier"):
+            return ""
+        seq = line.split('"')
+        ret = seq[1]
+        return ret
 
     @classmethod
     def is_synaptic_section(cls, line):  # cls {{{2
@@ -1617,11 +1703,46 @@ class XInputDB(object):  # {{{1
         return True
 
     @classmethod
-    def save_remains(cls, fp, db):  # cls {{{2
-        # type: (IO[Text], Dict[int, NProp]) -> bool
+    def section_parser(cls, line):  # cls {{{1
+        # type: (Text) -> Tuple[int, Text]
+        if cls.is_end_section(line):
+            cls.f_section = False
+            return -1, ""
+        if not cls.f_section:
+            # secname is lower-case
+            secname = cls.is_begin_of_section(line)
+            if secname == "":
+                return -1, ""
+            if secname != "inputclass":
+                return -1, ""
+            cls.f_section = True
+            cls.n_section += 1
+            cls.cur_section = ""
+            return cls.n_section, ""
+        if cls.cur_section == "":
+            id_name = cls.is_identifier(line)
+            if id_name != "":
+                cls.cur_section = id_name
+                cls.sections[cls.n_section] = id_name
+                return cls.n_section, id_name
+        return cls.n_section, cls.cur_section
+
+    @classmethod
+    def section_parser_clear(cls):  # cls {{{1
+        # type: () -> None
+        cls.f_section = False
+        cls.n_section = 0
+        cls.cur_section = ""
+        cls.sections = {}
+
+    @classmethod
+    def save_remains(cls, fp, db, sec_prev):  # cls {{{2
+        # type: (IO[Text], Dict[int, NProp], int) -> bool
         fWrote = False
         for n, prop in db.items():
             if not isinstance(prop, NProp):
+                continue
+            if prop.n_section != sec_prev:
                 continue
             for idx, v in enumerate(prop.vals):
                 if v is None:
@@ -1638,6 +1759,7 @@ class XInputDB(object):  # {{{1
                     fp.write(" " * 8 + "# output by touchpadtuner\n")
                 line = prop.compose(idx)
                 fp.write(line)
+        return False
 
 
 # {{{2
@@ -1652,6 +1774,10 @@ def options():  # {{{1
     p = ArgumentParser()
     p.add_argument('--device-id', '-d', type=int, default=0)
     p.add_argument('--file-encoding', '-e', type=str, default="utf-8")
+    p.add_argument("-o", '--output', dest="fnameOut", type=str,
+                   default="99-synaptics.conf")
+    p.add_argument("-i", '--input', dest="fnameIn", type=str,
+                   default="/usr/share/X11/xorg.conf.d/70-synaptics.conf")
     opts = p.parse_args()
 
     if opts.device_id == 0:
@@ -1777,9 +1903,8 @@ class Gui(object):  # {{{1
     def cmdsave(self):  # {{{2
         # type: () -> None
         assert opts is not None
-        db = XInputDB.read(opts.fname)
-        db[-1] = opts.fname
-        XInputDB.save(opts.fnameOut, db)
+        db = XInputDB.read(opts.fnameIn)
+        XInputDB.save(opts.fnameOut, opts.fnameIn, db)
 
     def cmdquit(self):  # {{{2
         # type: () -> None
