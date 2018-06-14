@@ -6,4 +6,6 @@
 .test2
 .test3
 *.pyc
+.mypy_cache
+build
 

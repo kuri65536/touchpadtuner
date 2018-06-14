@@ -1,8 +1,12 @@
 #! env python3
 '''License: Modified BSD, see touchpadtuner.py'''
 import sys
+import os
 import unittest
 import subprocess
+
+sys.path.append(os.path.realpath(os.path.join(
+                os.path.dirname(__file__), "..")))
 
 if sys.version_info[0] == 2:
     import touchpadtuner2 as tgt
