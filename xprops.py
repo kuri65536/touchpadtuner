@@ -11,12 +11,13 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 from __future__ import print_function
 # from logging import info
 
-from common import (parseBool, parseFloat, parseInt, parseIntOrPercent, )
+from common import (Percent,
+                    parseBool, parseFloat, parseInt, parseIntOrPercent, )
 
 try:
-    from typing import (Any, Callable, Dict, IO, List, Optional, Sized,
-                        Text, Tuple, Union, )
-    Any, Callable, Dict, IO, List, Optional, Text, Tuple, Union
+    from typing import (Any, Callable, Dict, IO, Iterable,
+                        List, Optional, Sized, Text, Tuple, Union, )
+    Any, Callable, Dict, IO, Iterable, List, Optional, Text, Tuple, Union
 except:
     pass
 
@@ -790,13 +791,14 @@ Noise cancellation
     def compose_format(cls, fmt, v):  # cls {{{1
         # type: (Text, Any) -> Text
         # TODO: more complex conversion.
-        fmt = fmt.replace("{:P}", "{:d}%")
-
+        fmt = fmt.replace("{:P}", "{}")
         if not isinstance(v, (tuple, list)):
             return fmt.format(v)
         _v = []  # type: List[Any]
         for i in v:
-            if "{:d}" in fmt:
+            if isinstance(i, Percent):
+                _v.append(str(i))
+            elif "{:d}" in fmt:
                 _v.append(int(i))
             elif "{:f}" in fmt:
                 _v.append(float(i))
@@ -862,7 +864,7 @@ Noise cancellation
         return src
 
     @classmethod
-    def parse_xconf(cls, fmt, _src):  # cls {{{1
+    def parse_xconf(self, fmt, _src):  # {{{1
         # type: (Text, Text) -> Any
         # TODO(Shimoda): remove the inline comment or ends '"'.
         if fmt == "{:d}":
@@ -897,6 +899,54 @@ Noise cancellation
                 return None
             ret.append(v)
         return ret
+
+
+class NPropDb(Sized):  # {{{1
+    def __init__(self):  # {{{1
+        # type: () -> None
+        self.props = []  # type: List[NProp]
+
+    def __iter__(self):  # {{{1
+        # type: () -> Iterable[NProp]
+        return self.props
+
+    def __contains__(self, a):  # {{{1
+        # type: (Any) -> bool
+        assert isinstance(a, int)
+        for i in self.props:
+            if i.n == a:
+                return True
+        return False
+
+    def __getitem__(self, idx, *args, **kw):  # {{{1
+        # type: (int, NProp, NProp) -> NProp
+        for i in self.props:
+            if i.n == idx:
+                return i
+        if len(args) > 0:
+            return args[0]
+        if "fallback" in kw:
+            return kw["fallback"]
+        raise KeyError("invalid key '{}'".format())
+
+    def __setitem__(self, n, prop):  # {{{1
+        # type: (int, NProp) -> None
+        if prop.n not in self:
+            self.props.append(prop)
+            return
+        for i in self.props:
+            if i.n == n:
+                i.vals[prop.idx] = prop.val
+                break
+
+    def __len__(self):  # {{{1
+        # type: () -> int
+        return len(self.props)
+
+    def items(self):  # {{{1
+        # type: () -> Iterable[Tuple[int, NProp]]
+        for i in self.props:
+            yield (i.n, i)
 
 
 # main {{{1

@@ -10,8 +10,12 @@ sys.path.append(os.path.realpath(os.path.join(
 
 if sys.version_info[0] == 2:
     import touchpadtuner2 as tgt
+    import xprops
+    import xconf
 else:
     import touchpadtuner2 as tgt
+    import xprops
+    import xconf
 
 
 class cfg:
@@ -38,24 +42,38 @@ class Test(unittest.TestCase):
         seq = [xi.clks(0), xi.clks(1), xi.clks(2)]
         if cfg.fDryrun:
             return
+
+        # change it.
         xi.fDryrun = False
-        tmp = [5, seq[1], seq[2]]
+        rnd = (seq[0] + 1) % 3 + 1  # make 1 -> 3
+        tmp = [rnd, seq[1], seq[2]]
         xi.clks(0, tmp)
-        res = [xi.clks(0), xi.clks(1), xi.clks(2)]
-        xi.clks(0, seq)  # restore.
+        res = xi.clks(0)
+        assert res == rnd, "{} != {} ?can't set?".format(res, rnd)
+
         xi.fDryrun = True
-        assert seq[0] != res[0]
+        rnd = (rnd + 1) % 3 + 1  # make 1 -> 3
+        tmp = [rnd, seq[1], seq[2]]
+        xi.clks(0, tmp)
+        res = xi.clks(0)
+        assert res != rnd, "{} == {} ?dry run enabled??".format(res, rnd)
+
+        xi.fDryrun = False
+        xi.clks(0, seq)  # restore.
+        res = xi.clks(0)
+        assert res != rnd, "{} == {} ?can't set?".format(res, rnd)
 
     def test_read(self):  # {{{1
         # type: () -> None
-        tgt.XInputDB.read(u"tests/70-synaptics.conf")
+        xconf.XConfFile().read(u"tests/70-synaptics.conf")
 
     def test_save_0_not_override(self):  # {{{1
         # type: () -> None
         fname = u"tests/70-synaptics.conf"
         fnameOut = u"build/70-synaptics.conf.through0"
-        db = tgt.XInputDB.read(fname)
-        tgt.XInputDB.save(fnameOut, fname, db)
+        xf = xconf.XConfFile()
+        db = xf.read(fname)
+        xf.save(fnameOut, fname, db)
         res = subprocess.check_output(["/usr/bin/diff", fname, fnameOut])
         _res = res.decode("utf-8")
         _res = _res.strip()
@@ -65,9 +83,10 @@ class Test(unittest.TestCase):
         # type: () -> None
         fname = u"tests/70-synaptics.conf"
         fnameOut = u"build/70-synaptics.conf.through11"
-        db = tgt.XInputDB.read(fname)
+        xf = xconf.XConfFile()
+        db = xf.read(fname)
         db[tgt.NProp.finger].vals = [10, 100, 20]
-        tgt.XInputDB.save(fnameOut, fname, db)
+        xf.save(fnameOut, fname, db)
         try:
             res = subprocess.check_output(["/usr/bin/diff", fname, fnameOut])
             self.fail()  # 0 == no change was detected
@@ -79,9 +98,10 @@ class Test(unittest.TestCase):
         # type: () -> None
         fname = u"tests/70-synaptics.conf"
         fnameOut = u"build/70-synaptics.conf.through12"
-        db = tgt.XInputDB.read(fname)
+        xf = xconf.XConfFile()
+        db = xf.read(fname)
         db[tgt.NProp.finger].vals = [50, 200, 20]
-        tgt.XInputDB.save(fnameOut, fname, db)
+        xf.save(fnameOut, fname, db)
         try:
             res = subprocess.check_output(["/usr/bin/diff", fname, fnameOut])
             self.fail()  # 0 == no change was detected
@@ -93,9 +113,10 @@ class Test(unittest.TestCase):
         # type: () -> None
         fname = u"tests/70-synaptics.conf"
         fnameOut = u"build/70-synaptics.conf.through21"
-        db = tgt.XInputDB.read(fname)
+        xf = xconf.XConfFile()
+        db = xf.read(fname)
         db[tgt.NProp.tap_action].vals = [0, 0, 0, 0, 1, 3, 2]
-        tgt.XInputDB.save(fnameOut, fname, db)
+        xf.save(fnameOut, fname, db)
         try:
             res = subprocess.check_output(["/usr/bin/diff", fname, fnameOut])
             self.fail()  # 0 == no change was detected
