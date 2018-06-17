@@ -91,9 +91,9 @@ Development Environment
 
 | term | description   |
 |:----:|:--------------|
-| OS   | Lubuntu 17.10 |
-| Xorg | 1.19.5        |
-| lang | Python 3.6.2, Python 2.7.14  |
+| OS   | Lubuntu 18.04 |
+| Xorg | 1.19.6        |
+| lang | Python 3.6.5, Python 2.7.15rc1  |
 | tool | xinput 1.6.2 (XI server 2.3) |
 | tool | tkinter       |
 
