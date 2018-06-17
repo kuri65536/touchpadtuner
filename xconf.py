@@ -140,6 +140,7 @@ class XConfFile(object):  # {{{1
                 ret[prop.n] = prop
                 # TODO: split a prop to different section...
                 ret[prop.n].n_section = sec
+        fp.close()
         return ret
 
     def save(self, fname, fnameIn, db):  # {{{1

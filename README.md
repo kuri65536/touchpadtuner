@@ -1,4 +1,4 @@
-TouchPad Tuning tool for Lxde (xinput)
+TouchPad(Synaptic) Tuning tool for Lxde
 ===============================================================================
 Sometime, I face the problem of TouchPad configuration in Lubuntu.
 My laptop have too sensitive TouchPad.
@@ -9,6 +9,9 @@ and no need to gnome or another heavy environment/dependencies.
 
 Requirement
 -----------------------------------------
+- python and python-tk
+- xinput command
+
 ### In lubuntu
 
 for Python3
@@ -116,7 +119,7 @@ Reference
 
 License
 -----------------------------------------
-see the top of source code, it is Modified BSD.
+see the top of source code, it is MPL2.0.
 
 
 Screenshot
@@ -180,6 +183,15 @@ Device 'ELAN1201:00 04F3:3054 Touchpad':
 
 ### E203NA (17.10, under 4.13.0.21) <!-- {{{2 -->
 
+
+Release
+-----------------------------------------
+| version | description |
+|:-------:|:---|
+| 1.0.0   | append the test, compat with python2, output to xconf |
+| 0.3.0   | show hint text in sample label |
+| 0.2.0   | append preview canvas |
+| 0.1.0   | 1st version |
 
 <!--
 vi: ft=markdown:et:fdm=marker

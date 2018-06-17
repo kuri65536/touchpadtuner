@@ -2,7 +2,7 @@
 
 mypy := venv/bin/mypy
 src2 := touchpadtuner2.py
-test3 := test.py
+test3 := tests/test.py
 path_typeshed := venv/lib/mypytypeshed
 flake8_3 := flake8
 
@@ -14,7 +14,7 @@ launch:
 
 test: .test3
 .test3: $(src3) $(test3)
-	python3 test.py
+	python3 $(test3)
 	if [ x$$? = x0 ]; then touch $@; fi
 
 check: .check2
