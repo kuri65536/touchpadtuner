@@ -1,4 +1,4 @@
-#! env python
+#! /usr/bin/python3
 # -= encoding=utf-8 =-
 '''
 Copyright (c) 2018, 2017, shimoda as kuri65536 _dot_ hot mail _dot_ com
@@ -17,7 +17,8 @@ from logging import info
 import common
 from common import (BoolVar, CmbVar, FltVar, IntVar,
                     open_file, )
-from xprops import NProp
+from xprops import NProp, NPropDb
+from xconf import XConfFile
 
 try:
     from typing import (Any, Callable, Dict, IO, List, Optional,
@@ -62,7 +63,12 @@ class XInputDB(object):  # {{{1
 
     def __init__(self):
         # type: () -> None
-        self.cmdbuf = []  # type: List[List[Text]]
+        def apply(cmd):
+            # type: (List[Text]) -> bool
+            return False
+
+        self._callback = apply  # type: Callable[[List[Text]], bool]
+
         self.fDryrun = True
         self._palmDims = []  # type: List[IntVar]
         self._edges = []  # type: List[IntVar]
@@ -188,10 +194,8 @@ class XInputDB(object):  # {{{1
         if len(v) > 0:
             seq = [u"1" if i else u"0" for i in v]
             cmd = [self.cmd_bin, self.cmd_int, Text(self.dev), Text(key), u"8"]
-            if not self.fDryrun:
-                info("prop_bool: {}".format(str(cmd + seq)))
-                subprocess.call(cmd + seq)
-            self.cmdbuf.append(cmd + seq)
+            info("prop_bool: {}".format(str(cmd + seq)))
+            self._callback(cmd + seq)
         seq = self.prop_get(key)
         return True if seq[idx] == "1" else False
 
@@ -210,10 +214,8 @@ class XInputDB(object):  # {{{1
         elif func(seq):
             cmd = [self.cmd_bin, self.cmd_int, Text(self.dev),
                    Text(key), typ] + seq
-            if not self.fDryrun:
-                info("prop_i{}: ".format(typ) + Text(cmd))
-                subprocess.call(cmd)
-            self.cmdbuf.append(cmd)
+            info("prop_i{}: ".format(typ) + Text(cmd))
+            self._callback(cmd + seq)
         seq = self.prop_get(key)
         return int(seq[idx])
 
@@ -243,10 +245,8 @@ class XInputDB(object):  # {{{1
         elif func(seq):
             cmd = [self.cmd_bin, self.cmd_flt, str(self.dev),
                    str(key)]
-            if not self.fDryrun:
-                print("prop_flt: " + str(cmd + seq))
-                subprocess.call(cmd + seq)
-            self.cmdbuf.append(cmd + seq)
+            print("prop_flt: " + str(cmd + seq))
+            self._callback(cmd + seq)
         seq = self.prop_get(key)
         return float(seq[idx])
 
@@ -407,8 +407,10 @@ class XInputDB(object):  # {{{1
         vals = [_vals.get(i, 0) for i in range(max(_vals.keys()) + 1)]
         return btns, vals
 
-    def apply(self):  # {{{1
-        # type: () -> bool
+    def apply(self, fn):  # {{{1
+        # type: (Callable[[List[Text]], bool]) -> bool
+        self._callback = fn
+
         self.edges(0, [self._edges[i].get() for i in range(4)])  # 274
         self.finger(0, [self._finger[i].get() for i in range(3)])  # 275
         self.taptime(xi._taptime.get())  # 276
@@ -439,38 +441,58 @@ class XInputDB(object):  # {{{1
         self.noise(0, [self._noise[i].get() for i in range(2)])  # 308
         return False
 
+    def apply_cmd(self, cmd):  # {{{1
+        # type: (List[Text]) -> bool
+        if not self.fDryrun:
+            subprocess.call(cmd)
+        return False
+
     def dump(self):  # {{{2
         # type: () -> List[List[Text]]
         # from GUI.
-        self.fDryrun = True
-        self.cmdbuf = []  # type: List[List[Text]]
+        ret = []  # type: List[List[Text]]
 
-        self.apply()
-        # ret = self.cmdbuf.copy()  # type: List[List[str]]
-        ret = list(self.cmdbuf)
+        def apply(cmd):
+            # type: (List[Text]) -> bool
+            ret.append(cmd)
+            return False
 
-        self.fDryrun = False
-        self.cmdbuf = []
+        self.apply(apply)
         return ret
 
     def dumpdb(self):  # {{{2
-        # type: () -> Dict[NProp, Any]
-        return {}
+        # type: () -> NPropDb
+        ret = NPropDb()
+
+        def apply(cmd):
+            # type: (List[Text]) -> bool
+            prop = NProp.from_cmd(cmd)
+            if prop is None:
+                return False
+            ret[prop.n] = prop
+            return False
+
+        self.apply(apply)
+        return ret
 
     def dumps(self):  # {{{2
         # type: () -> Text
         # from GUI.
-        self.fDryrun = True
-        self.cmdbuf = []
-        self.apply()
+        cmds = []  # type: List[List[Text]]
+
+        def apply(cmd):
+            # type: (List[Text]) -> bool
+            cmds.append(cmd)
+            return False
+
+        self.apply(apply)
+
         ret = u""
-        for line in self.cmdbuf:
+        for line in cmds:
             ret += u'\n' + u' '.join(line)
         if len(ret) > 0:
             ret = ret[1:]
 
-        self.fDryrun = False
-        self.cmdbuf = []
         return ret
 
 
@@ -613,13 +635,17 @@ class Gui(object):  # {{{1
 
     def cmdapply(self):  # {{{2
         # type: () -> None
-        xi.apply()
+        xi.apply(xi. apply_cmd)
 
     def cmdsave(self):  # {{{2
         # type: () -> None
         opts = common.opts
-        db = XInputDB.read(opts.fnameIn)
-        XInputDB.save(opts.fnameOut, opts.fnameIn, db)
+        xf = XConfFile()
+        db = xf.read(opts.fnameIn)
+        for n, p in xi.dumpdb().items():
+            prop = db[n]
+            prop.update(p)
+        xf.save(opts.fnameOut, opts.fnameIn, db)
 
     def cmdquit(self):  # {{{2
         # type: () -> None

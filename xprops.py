@@ -29,10 +29,16 @@ def allok(seq):
 
 class PropFormat(Sized):  # {{{1
     def __init__(self, *args):  # {{{1
-        # type: (Tuple[Text, Text]) -> None
+        # type: (Tuple[Text, ...]) -> None
         self.fmts = args
         if args[0][0] == "dummy":
             self.fmts = ()
+        self.dgts = []  # type: List[int]
+        for arg in args:
+            n = 0
+            if len(arg) >= 3:
+                n = int(arg[2])
+            self.dgts.append(n)
 
     def __len__(self):  # {{{1
         # type: () -> int
@@ -41,7 +47,8 @@ class PropFormat(Sized):  # {{{1
     def __getitem__(self, idx):  # {{{1
         # type: (Any) -> Tuple[Text, Text]
         assert isinstance(idx, int)
-        return self.fmts[idx]
+        seq = self.fmts[idx]
+        return (seq[0], seq[1])
 
 
 class NProp(object):  # {{{1
@@ -688,10 +695,10 @@ Noise cancellation
               edge motion is used only  when  dragging.  Property:  "Synaptics
               Edge Motion Always"
         ''')),
-        move_speed: PropFormat(("MinSpeed", "{:f}"),
-                               ("MaxSpeed", "{:f}"),
-                               ("AccelFactor", "{:f}"),
-                               ("TrackstickSpeed", "{:f}")),
+        move_speed: PropFormat(("MinSpeed", "{:f}", "3"),
+                               ("MaxSpeed", "{:f}", "3"),
+                               ("AccelFactor", "{:f}", "3"),
+                               ("TrackstickSpeed", "{:f}", "3")),
         pressure_motion: PropFormat(("PressureMotionMinZ", "{:d}"),
                                     ("PressureMotionMaxZ", "{:d}")),
         pressure_motion_factor:
@@ -754,15 +761,16 @@ Noise cancellation
         locked_drags: PropFormat(("LockedDrags", "{:b}"), ),
         locked_drags_timeout: PropFormat(("LockedDragTimeout", "{:d}"), ),
         circular_scrolling: PropFormat(("CircularScrolling", "{:b}"), ),
-        circular_scrolling_distance: PropFormat(("CircScrollDelta", "{:f}"), ),
+        circular_scrolling_distance:
+            PropFormat(("CircScrollDelta", "{:f}", "3"), ),
         circular_scrolling_trigger:
             PropFormat(("CircScrollTrigger", "{:d}"), ),
         circular_pad: PropFormat(("CircularPad", "{:b}"), ),
         palm_detection: PropFormat(("PalmDetect", "{:b}"), ),
         palm_dimensions: PropFormat(("PalmMinWidth", "{:d}"),
                                     ("PalmMinZ", "{:d}")),
-        coasting_speed: PropFormat(("CoastingSpeed", "{:f}"),
-                                   ("CoastingFriction", "{:f}")),
+        coasting_speed: PropFormat(("CoastingSpeed", "{:f}", "3"),
+                                   ("CoastingFriction", "{:f}", "3")),
         grab_event_device: PropFormat(("GrabEventDevice", "{:b}"), ),
         gestures: PropFormat(("TapAndDragGesture", "{:b}"), ),
         resolution_detect: PropFormat(("ResolutionDetect", "{:b}"), ),
@@ -786,6 +794,33 @@ Noise cancellation
         self.vals = [None] * len(NProp.xconfs[n])   # type: List[Any]
         self.wrote = []  # type: List[int]
         self.n_section = -1
+
+    @classmethod  # from_cmd {{{1
+    def from_cmd(cls, cmd):
+        # type: (List[Text]) -> Optional['NProp']
+        if "xinput" not in cmd[0]:
+            cmd = cmd[1:]
+        if not cmd[0].startswith("set-") or not cmd[0].endswith("-prop"):
+            return None
+        if cmd[0] == "set-int-prop":
+            typ = "int"
+        elif cmd[0] == "set-float-prop":
+            typ = "float"
+        else:
+            typ = "atm"
+        cmd = cmd[1:]
+        if not cmd[0].isdigit():
+            return None
+        n = int(cmd[0])
+        cmd = cmd[1:]
+        if typ == "int":
+            if not cmd[0].isdigit() and cmd[0] in ("8", "16", "32"):
+                return None
+            # t2 = int(cmd[0])
+            cmd = cmd[1:]
+        ret = NProp(n, -1)
+        ret.vals = cmd
+        return ret
 
     @classmethod
     def compose_format(cls, fmt, v):  # cls {{{1
@@ -900,6 +935,11 @@ Noise cancellation
             ret.append(v)
         return ret
 
+    def update(self, prop):  # {{{1
+        # type: ('NProp') -> 'NProp'
+        self.vals[prop.idx] = prop.val
+        return self
+
 
 class NPropDb(Sized):  # {{{1
     def __init__(self):  # {{{1
@@ -936,7 +976,7 @@ class NPropDb(Sized):  # {{{1
             return
         for i in self.props:
             if i.n == n:
-                i.vals[prop.idx] = prop.val
+                i.update(prop)
                 break
 
     def __len__(self):  # {{{1
