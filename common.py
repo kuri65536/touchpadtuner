@@ -31,6 +31,7 @@ tk, ttk
 
 
 class opts(object):  # {{{1
+    fDryrun = True
     file_encoding = "utf-8"
     fnameIn = "/usr/share/X11/xorg.conf.d/70-synaptics.conf"
     fnameOut = "99-synaptics.conf"

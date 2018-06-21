@@ -12,7 +12,8 @@ from __future__ import print_function
 import sys
 import os
 import subprocess
-from logging import info
+import logging
+from logging import debug as debg, info
 
 import common
 from common import (BoolVar, CmbVar, FltVar, IntVar,
@@ -69,7 +70,6 @@ class XInputDB(object):  # {{{1
 
         self._callback = apply  # type: Callable[[List[Text]], bool]
 
-        self.fDryrun = True
         self._palmDims = []  # type: List[IntVar]
         self._edges = []  # type: List[IntVar]
         self._edgescrs = []  # type: List[BoolVar]
@@ -194,7 +194,7 @@ class XInputDB(object):  # {{{1
         if len(v) > 0:
             seq = [u"1" if i else u"0" for i in v]
             cmd = [self.cmd_bin, self.cmd_int, Text(self.dev), Text(key), u"8"]
-            info("prop_bool: {}".format(str(cmd + seq)))
+            debg("prop_bool: {}".format(str(cmd + seq)))
             self._callback(cmd + seq)
         seq = self.prop_get(key)
         return True if seq[idx] == "1" else False
@@ -214,7 +214,7 @@ class XInputDB(object):  # {{{1
         elif func(seq):
             cmd = [self.cmd_bin, self.cmd_int, Text(self.dev),
                    Text(key), typ] + seq
-            info("prop_i{}: ".format(typ) + Text(cmd))
+            debg("prop_i{}: ".format(typ) + Text(cmd))
             self._callback(cmd + seq)
         seq = self.prop_get(key)
         return int(seq[idx])
@@ -245,7 +245,7 @@ class XInputDB(object):  # {{{1
         elif func(seq):
             cmd = [self.cmd_bin, self.cmd_flt, str(self.dev),
                    str(key)]
-            print("prop_flt: " + str(cmd + seq))
+            debg("prop_flt: " + str(cmd + seq))
             self._callback(cmd + seq)
         seq = self.prop_get(key)
         return float(seq[idx])
@@ -443,7 +443,8 @@ class XInputDB(object):  # {{{1
 
     def apply_cmd(self, cmd):  # {{{1
         # type: (List[Text]) -> bool
-        if not self.fDryrun:
+        if not common.opts.fDryrun:
+            info("command invoked: " + str(cmd))
             subprocess.call(cmd)
         return False
 
@@ -506,20 +507,26 @@ def options():  # {{{1
     # type: () -> Any
     from argparse import ArgumentParser
     p = ArgumentParser()
+    p.add_argument('--verbose', '-v', type=int, default=logging.WARNING,
+                   choices=[logging.DEBUG, logging.INFO, logging.WARNING,
+                            logging.ERROR, logging.CRITICAL, ])
     p.add_argument('--device-id', '-d', type=int, default=0)
     p.add_argument('--file-encoding', '-e', type=str, default="utf-8")
+    p.add_argument('--dry-run', '-n', action="store_true")
     p.add_argument("-o", '--output', dest="fnameOut", type=str,
                    default="99-synaptics.conf")
     p.add_argument("-i", '--input', dest="fnameIn", type=str,
                    default="/usr/share/X11/xorg.conf.d/70-synaptics.conf")
     opts = p.parse_args()
 
+    logging.getLogger().setLevel(opts.verbose)
     if opts.device_id == 0:
         ret = XInputDB.determine_devid()
         if ret is True:
             return None
         print("synaptics was detected as {} device".format(ret))
         XInputDB.dev = ret
+    common.opts.fDryrun = opts.dry_run
     common.opts.file_encoding = opts.file_encoding
     common.opts.fnameIn = opts.fnameIn
     common.opts.fnameOut = opts.fnameOut
@@ -635,7 +642,7 @@ class Gui(object):  # {{{1
 
     def cmdapply(self):  # {{{2
         # type: () -> None
-        xi.apply(xi. apply_cmd)
+        xi.apply(xi.apply_cmd)
 
     def cmdsave(self):  # {{{2
         # type: () -> None
@@ -1108,15 +1115,19 @@ gui = None  # type: Optional[Gui]
 def main():  # {{{1
     # type: () -> int
     global gui
+    debg("fetch settings, options and arguments...")
     opts = options()
     if opts is None:
         print("can't found Synaptics in xinput.")
         return 1
+    debg("create properties DB...")
     if XInputDB.createpropsdb():
         print("can't found Synaptics properties in xinput.")
         return 2
+    debg("build GUI...")
     gui = buildgui(opts)
     gui.root.after_idle(gui.callback_idle)
+    debg("start gui...")
     gui.root.mainloop()
     return 0
 

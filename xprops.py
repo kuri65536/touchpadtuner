@@ -102,6 +102,7 @@ class NProp(object):  # {{{1
       x Device Node (266):                        "/dev/input/event8"
     '''
     # name and numbers {{{1
+    device_enabled = 140
     coordinate_transformation_matrix = 142
     device_accel_profile = 270
     device_accel_constant_deceleration = 271
@@ -112,7 +113,7 @@ class NProp(object):  # {{{1
     tap_time = 276
     tap_move = 277
     tap_durations = 278
-    clickPad = 279
+    clickpad = 279
     middle_button_timeout = 280
     two_finger_pressure = 281
     two_finger_width = 282
@@ -227,7 +228,8 @@ class NProp(object):  # {{{1
               which will be used to access the physical device.  Normally  you
               should  use  something like "/dev/input/eventX", where X is some
               integer.
-
+        ''',
+        279: ''' {{{2
        Option "ClickPad" "boolean"
               Whether  the  device  is  a  click  pad.  A click pad device has
               button(s) integrated into the touchpad surface.  The  user  must
