@@ -22,9 +22,9 @@ from xprops import NProp, NPropDb
 from xconf import XConfFile
 
 try:
-    from typing import (Any, Callable, Dict, IO, List, Optional,
+    from typing import (Any, Callable, Dict, IO, Iterable, List, Optional,
                         Text, Tuple, Union, )
-    Any, Callable, Dict, IO, List, Optional, Text, Tuple, Union
+    Any, Callable, Dict, IO, Iterable, List, Optional, Text, Tuple, Union
 except:
     pass
 
@@ -42,6 +42,211 @@ else:
 def allok(seq):
     # type: (List[Text]) -> bool
     return True
+
+
+def apply_none(cmd):  # {{{1
+    # type: (List[Text]) -> bool
+    return False
+
+
+class NPropGui(object):  # {{{1
+    def __init__(self, n):  # {{{1
+        # type: (int) -> None
+        length = NProp.xinputs[n]
+        self.prop = NProp(n, 0)
+        self.length = length
+        self.typ = "32"
+        self.vars = []  # type: List[Any]
+        self._cache = []  # type: List[Text]
+
+    def is_loaded(self):  # {{{1
+        # type: () -> bool
+        return len(self._cache) > 0
+
+    def is_changed(self):  # {{{1
+        # type: () -> bool
+        if len(self.vars) < self.length:  # gui not loaded
+            return False
+        if not self.is_loaded():
+            self.load()
+        cur = self.compose()
+        for n, a in enumerate(cur):
+            b = self._cache[n]
+            if not self.cmp(a, b):
+                return True
+        return False
+
+    def load(self):  # {{{1
+        # type: () -> List[Text]
+        ret = self._cache = xi.prop_get(self.prop.n)
+        return ret
+
+    def compose(self):  # {{{1
+        # type: () -> List[Text]
+        assert False, "must be override"
+
+    def cmp(self, a, b):  # {{{1
+        # type: (Text, Text) -> bool
+        assert False, "must be override"
+
+    def sync(self):  # {{{1
+        # type: () -> bool
+        args = self.compose()
+        xi.prop_set_int(self.prop.n, self.typ, args)
+        return False
+
+    def current(self, i):  # {{{1
+        # type: (int) -> Text
+        if i < len(self.vars):
+            var = self.vars[i]
+            ret = var.get()
+            txt = Text(ret)
+            return txt
+        if not self.is_loaded():
+            self.load()
+        txt = self._cache[i]
+        return txt
+
+
+class NPropGuiInt(NPropGui):  # {{{1
+    def __init__(self, n, typ):  # {{{1
+        # type: (int, int) -> None
+        NPropGui.__init__(self, n)
+        self.vars = []  # type: List[IntVar]
+        self.typ = Text(typ)
+        db.regist(self)
+
+    def append(self, var):  # {{{1
+        # type: (IntVar) -> 'NPropGuiInt'
+        self.vars.append(var)
+        return self
+
+    def compose(self):  # {{{1
+        # type: () -> List[Text]
+        ret = []
+        for i in range(self.length):
+            n = self.vars[i].get()
+            ret.append(Text(n))
+        return ret
+
+    def cmp(self, a, b):  # {{{1
+        # type: (Text, Text) -> bool
+        return a == b
+
+
+class NPropGuiFlt(NPropGui):   # {{{1
+    def __init__(self, n):  # {{{1
+        # type: (int) -> None
+        NPropGui.__init__(self, n)
+        self.vars = []  # type: List[FltVar]
+        db.regist(self)
+
+    def append(self, var):  # {{{1
+        # type: (FltVar) -> 'NPropGuiFlt'
+        self.vars.append(var)
+        return self
+
+    def compose(self):  # {{{1
+        # type: () -> List[Text]
+        ret = []
+        for i in range(self.length):
+            n = self.vars[i].get()
+            ret.append(Text(n))
+        return ret
+
+    def cmp(self, a, b):  # {{{1
+        # type: (Text, Text) -> bool
+        af = float(a)
+        bf = float(b)
+        df = af - bf
+        df = df if df >= 0 else -df
+        dgt = NProp.xconfs[self.prop.n].dgts[0]  # TODO: determine index.
+        if df < 10 ** -dgt:
+            return True
+        return False
+
+    def sync(self):  # {{{1
+        # type: () -> bool
+        args = self.compose()
+        # TODO: 8 or 32
+        xi.prop_set_flt(self.prop.n, args)
+        return False
+
+
+class NPropGuiBol(NPropGui):   # {{{1
+    def __init__(self, n):  # {{{1
+        # type: (int) -> None
+        NPropGui.__init__(self, n)
+        self.typ = "8"
+        self.vars = []  # type: List[BoolVar]
+        db.regist(self)
+
+    def append(self, var):  # {{{1
+        # type: (BoolVar) -> 'NPropGuiBol'
+        self.vars.append(var)
+        return self
+
+    def compose(self):  # {{{1
+        # type: () -> List[Text]
+        ret = []
+        for i in range(self.length):
+            n = self.vars[i].get()
+            v = "1" if n else "0"
+            ret.append(v)
+        return ret
+
+    def cmp(self, a, b):  # {{{1
+        # type: (Text, Text) -> bool
+        af = a.lower() in ("1", "true")
+        bf = b.lower() in ("1", "true")
+        return af == bf
+
+
+class NPropGuiCmb(NPropGui):   # {{{1
+    def __init__(self, n, typ):  # {{{1
+        # type: (int, int) -> None
+        NPropGui.__init__(self, n)
+        self.typ = Text(typ)
+        self.vars = []  # type: List[CmbVar]
+        db.regist(self)
+
+    def append(self, var):  # {{{1
+        # type: (CmbVar) -> 'NPropGuiCmb'
+        self.vars.append(var)
+        return self
+
+    def compose(self):  # {{{1
+        # type: () -> List[Text]
+        ret = []
+        for i in range(self.length):
+            n = self.vars[i].get()
+            ret.append(Text(n))
+        return ret
+
+    def cmp(self, a, b):  # {{{1
+        # type: (Text, Text) -> bool
+        return a == b
+
+
+class db(object):  # {{{1
+    # {{{1
+    db = {}  # type: Dict[int, NPropGui]
+
+    @classmethod  # regist {{{1
+    def regist(cls, item):  # {{{1
+        # type: (NPropGui) -> None
+        cls.db[item.prop.n] = item
+
+    @classmethod  # regist {{{1
+    def get(cls, n):  # {{{1
+        # type: (int) -> NPropGui
+        return cls.db[n]
+
+    @classmethod  # regist {{{1
+    def enum(cls):  # {{{1
+        # type: () -> Iterable[NPropGui]
+        for i in cls.db.values():
+            yield i
 
 
 class XInputDB(object):  # {{{1
@@ -64,39 +269,35 @@ class XInputDB(object):  # {{{1
 
     def __init__(self):
         # type: () -> None
-        def apply(cmd):
-            # type: (List[Text]) -> bool
-            return False
+        self._callback = apply_none  # type: Callable[[List[Text]], bool]
 
-        self._callback = apply  # type: Callable[[List[Text]], bool]
-
-        self._palmDims = []  # type: List[IntVar]
-        self._edges = []  # type: List[IntVar]
-        self._edgescrs = []  # type: List[BoolVar]
-        self._movespd = []  # type: List[FltVar]
-        self._scrdist = []  # type: List[IntVar]
-        self._tapdurs = []  # type: List[IntVar]
-        self._cstspd = []  # type: List[FltVar]
-        self._prsmot = []  # type: List[IntVar]
-        self._prsfct = []  # type: List[FltVar]
-        self._noise = []  # type: List[IntVar]
-        self._softareas = []  # type: List[IntVar]
-        self._finger = []  # type: List[IntVar]
-        self._twofingerscroll = []  # type: List[BoolVar]
-        self._clks = []  # type: List[CmbVar]
-        self._taps = []  # type: List[CmbVar]
-        self._taptime = IntVar(None)
-        self._tapmove = IntVar(None)
-        self._twoprs = IntVar(None)
-        self._twowid = IntVar(None)
-        self._lckdrags = BoolVar(None)
-        self._lckdragstimeout = IntVar(None)
-        self._cirscr = BoolVar(None)
-        self._cirdis = FltVar(None)
-        self._cirtrg = CmbVar(None)
-        self._cirpad = BoolVar(None)
-        self._palmDetect = BoolVar(None)
-        self._gestures = BoolVar(None)
+        self._edges = NPropGuiInt(NProp.edges, 32)  # 274
+        self._finger = NPropGuiInt(NProp.finger, 32)  # 275
+        self._taptime = NPropGuiInt(NProp.tap_time, 32)  # 276
+        self._tapmove = NPropGuiInt(NProp.tap_move, 32)  # 277
+        self._tapdurs = NPropGuiInt(NProp.tap_durations, 32)  # 278
+        self._twoprs = NPropGuiInt(NProp.two_finger_pressure, 32)  # 281
+        self._twowid = NPropGuiInt(NProp.two_finger_width, 32)  # 282
+        self._scrdist = NPropGuiInt(NProp.scrdist, 32)  # 283
+        self._edgescrs = NPropGuiBol(NProp.edgescrs)  # 284
+        self._twofingerscroll = NPropGuiBol(NProp.two_finger_scrolling)
+        self._movespd = NPropGuiFlt(NProp.move_speed)  # 286
+        self._lckdrags = NPropGuiBol(NProp.locked_drags)  # 288
+        self._lckdragstimeout = NPropGuiInt(NProp.locked_drags_timeout, 32)
+        self._taps = NPropGuiCmb(NProp.tap_action, 8)  # 290
+        self._clks = NPropGuiCmb(NProp.click_action, 8)  # 291
+        self._cirscr = NPropGuiBol(NProp.cirscr)  # 292
+        self._cirdis = NPropGuiFlt(NProp.cirdis)  # 293
+        self._cirtrg = NPropGuiCmb(NProp.cirtrg, 8)  # 294
+        self._cirpad = NPropGuiBol(NProp.cirpad)  # 295
+        self._palmDetect = NPropGuiBol(NProp.palm_detection)  # 296
+        self._palmDims = NPropGuiInt(NProp.palm_dimensions, 32)  # 297
+        self._cstspd = NPropGuiFlt(NProp.coasting_speed)  # 298
+        self._prsmot = NPropGuiInt(NProp.pressure_motion, 32)  # 299 ???
+        self._prsfct = NPropGuiFlt(NProp.pressure_motion_factor)  # 300
+        self._gestures = NPropGuiBol(NProp.gestures)  # 303
+        self._softareas = NPropGuiInt(NProp.softareas, 32)  # 307
+        self._noise = NPropGuiInt(NProp.noise_cancellation, 32)  # 308
 
     @classmethod
     def determine_devid(cls):  # cls {{{2
@@ -180,7 +381,7 @@ class XInputDB(object):  # {{{1
             ret = ret[1:]
         return ret
 
-    def prop_get(self, key):  # {{{2
+    def prop_get(self, key):  # {{{1
         # type: (int) -> List[Text]
         cmd = self.cmd_shw.format(self.dev, key)
         curb = subprocess.check_output(cmd, shell=True)
@@ -188,194 +389,199 @@ class XInputDB(object):  # {{{1
         seq = curs.split(":")[1].split(",")
         return [i.strip() for i in seq]
 
-    def prop_bool(self, key, idx,  # {{{2
-                  v=[]):
-        # type: (int, int, List[bool]) -> bool
-        if len(v) > 0:
-            seq = [u"1" if i else u"0" for i in v]
-            cmd = [self.cmd_bin, self.cmd_int, Text(self.dev), Text(key), u"8"]
-            debg("prop_bool: {}".format(str(cmd + seq)))
-            self._callback(cmd + seq)
-        seq = self.prop_get(key)
-        return True if seq[idx] == "1" else False
+    def prop_set_int(self, key, typ, seq):  # {{{1
+        # type: (int, Text, List[Text]) -> bool
+        cmd = [self.cmd_bin, self.cmd_int, Text(self.dev),
+               Text(key), typ] + seq
+        return self._callback(cmd)
 
-    def prop_int(self,  # {{{2
-                 typ,  # type: Text
-                 key,  # type: int
-                 idx,  # type: int
-                 v=[],  # type: List[int]
-                 func=allok  # type: Callable[[List[Text]], bool]
-                 ):
-        # type: (...) -> int
-        seq = [Text(i) for i in v]
-        assert len(seq) == 0 or (len(seq) > 0 and len(seq) > idx)
-        if len(v) < 1:
-            pass
-        elif func(seq):
-            cmd = [self.cmd_bin, self.cmd_int, Text(self.dev),
-                   Text(key), typ] + seq
-            debg("prop_i{}: ".format(typ) + Text(cmd))
-            self._callback(cmd + seq)
-        seq = self.prop_get(key)
-        return int(seq[idx])
+    def prop_set_flt(self, key, seq):  # {{{1
+        # type: (int, List[Text]) -> bool
+        cmd = [self.cmd_bin, self.cmd_flt, Text(self.dev),
+               Text(key)] + seq
+        return self._callback(cmd)
 
-    def prop_i32(self,  # {{{2
-                 key,  # type: int
-                 idx,  # type: int
-                 v,  # type: List[int]
-                 func=allok  # type: Callable[[List[Text]], bool]
-                 ):
-        # type: (...) -> int
-        return self.prop_int("32", key, idx, v, func)
+    def clks(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.click_action).current(i)
+        ret = int(txt)
+        return ret
 
-    def prop_i8(self,  # {{{2
-                key,  # type: int
-                idx,  # type: int
-                v,  # type: List[int]
-                func=allok  # type: Callable[[List[Text]], bool]
-                ):
-        # type: (...) -> int
-        return self.prop_int("8", key, idx, v, func)
+    def taps(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.tap_action).current(i)
+        ret = int(txt)
+        return ret
 
-    def prop_flt(self, key, idx, v=[], func=allok):  # {{{2
-        # type: (int, int, List[float], Callable[[List[Text]], bool]) -> float
-        seq = [Text("{:f}").format(i) for i in v]
-        if len(v) < 1:
-            pass
-        elif func(seq):
-            cmd = [self.cmd_bin, self.cmd_flt, str(self.dev),
-                   str(key)]
-            debg("prop_flt: " + str(cmd + seq))
-            self._callback(cmd + seq)
-        seq = self.prop_get(key)
-        return float(seq[idx])
+    def tapdurs(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.tap_durations).current(i)
+        ret = int(txt)
+        return ret
 
-    def clks(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        assert len(v) == 0 or len(v) == 3
-        return self.prop_i8(NProp.click_action, i, v)
+    def taptime(self):  # {{{2
+        # type: () -> int
+        txt = db.get(NProp.tap_time).current(0)
+        ret = int(txt)
+        return ret
 
-    def taps(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        assert len(v) == 0 or len(v) == 7
-        return self.prop_i8(NProp.tap_action, i, v)
+    def tapmove(self):  # {{{2
+        # type: () -> int
+        txt = db.get(NProp.tap_move).current(0)
+        ret = int(txt)
+        return ret
 
-    def tapdurs(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        assert len(v) == 0 or len(v) == 3
-        return self.prop_i32(NProp.tap_durations, i, v)
-
-    def taptime(self, v=None):  # {{{2
-        # type: (Optional[int]) -> int
-        return self.prop_i32(NProp.tap_time, 0, [] if v is None else [v])
-
-    def tapmove(self, v=None):  # {{{2
-        # type: (Optional[int]) -> int
-        return self.prop_i32(NProp.tap_move, 0, [] if v is None else [v])
-
-    def finger(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        def limit(seq):
+    def finger(self, i):  # {{{2
+        # type: (int) -> int
+        def limit(seq):  # TODO: add to NPropGui
             # type: (List[Text]) -> bool
             low = int(seq[0])
             hig = int(seq[1])
             return low < hig
-        return self.prop_i32(NProp.finger, i, v, limit)
+        txt = db.get(NProp.finger).current(i)
+        ret = int(txt)
+        return ret
 
-    def twofingerscroll(self, i, v=[]):  # {{{2
-        # type: (int, List[bool]) -> bool
-        return self.prop_bool(NProp.two_finger_scrolling, i, v)
+    def twofingerscroll(self, i):  # {{{2
+        # type: (int) -> bool
+        txt = db.get(NProp.two_finger_scrolling).current(i)
+        ret = bool(txt)
+        return ret
 
-    def movespd(self, i, v=[]):  # {{{2
-        # type: (int, List[float]) -> float
-        return self.prop_flt(NProp.move_speed, i, v)
+    def movespd(self, i):  # {{{2
+        # type: (int) -> float
+        txt = db.get(NProp.move_speed).current(i)
+        ret = float(txt)
+        return ret
 
-    def lckdrags(self, v=None):  # {{{2
-        # type: (Optional[bool]) -> bool
-        return self.prop_bool(NProp.locked_drags, 0, [] if v is None else [v])
+    def lckdrags(self):  # {{{2
+        # type: () -> bool
+        txt = db.get(NProp.locked_drags).current(0)
+        ret = bool(txt)
+        return ret
 
-    def lckdragstimeout(self, v=None):  # {{{2
-        # type: (Optional[int]) -> int
-        return self.prop_i32(NProp.locked_drags_timeout, 0,
-                             [] if v is None else [v])
+    def lckdragstimeout(self):  # {{{2
+        # type: () -> int
+        txt = db.get(NProp.locked_drags_timeout).current(0)
+        ret = int(txt)
+        return ret
 
-    def cirscr(self, v=None):  # {{{2
-        # type: (Optional[bool]) -> bool
-        return self.prop_bool(NProp.circular_scrolling, 0,
-                              [] if v is None else [v])
+    def cirscr(self):  # {{{2
+        # type: () -> bool
+        txt = db.get(NProp.circular_scrolling).current(0)
+        ret = bool(txt)
+        return ret
 
-    def cirtrg(self, v=None):  # {{{2
-        # type: (Optional[int]) -> int
-        def limit(seq):
+    def cirtrg(self):  # {{{2
+        # type: () -> int
+        def limit(seq):  # TODO: impl.
             # type: (List[Text]) -> bool
             cur = int(seq[0])
             return 0 <= cur <= 8
-        return self.prop_i8(NProp.circular_scrolling_trigger, 0,
-                            [] if v is None else [v], limit)
+        txt = db.get(NProp.circular_scrolling_trigger).current(0)
+        ret = int(txt)
+        return ret
 
-    def cirpad(self, v=None):  # {{{2
-        # type: (Optional[bool]) -> bool
-        return self.prop_bool(NProp.circular_pad, 0, [] if v is None else [v])
+    def cirpad(self):  # {{{2
+        # type: () -> bool
+        txt = db.get(NProp.circular_pad).current(0)
+        ret = bool(txt)
+        return ret
 
-    def cirdis(self, v=None):  # {{{2
-        # type: (Optional[float]) -> float
-        return self.prop_flt(NProp.circular_scrolling_distance, 0,
-                             [] if v is None else [v])
+    def cirdis(self):  # {{{2
+        # type: () -> float
+        txt = db.get(NProp.circular_scrolling_distance).current(0)
+        ret = float(txt)
+        return ret
 
-    def edges(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        return self.prop_i32(NProp.edges, i, v)
+    def edges(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.edges).current(i)
+        ret = int(txt)
+        return ret
 
-    def edgescrs(self, i, v=[]):  # {{{2
-        # type: (int, List[bool]) -> bool
-        return self.prop_bool(NProp.edge_scrolling, i, v)
+        """
+        assert len(v) in (0, 4)
+        n = NProp.edges
+        prop = db.get(n)
+        if len(v) > 0:
+            pass
+        elif prop.is_changed():
+            pass
+        return self.prop_i32(n, i, v)
+        """
 
-    def cstspd(self, i, v=[]):  # {{{2
-        # type: (int, List[float]) -> float
-        return self.prop_flt(NProp.coasting_speed, i, v)
+    def edgescrs(self, i):  # {{{2
+        # type: (int) -> bool
+        txt = db.get(NProp.edge_scrolling).current(i)
+        ret = bool(txt)
+        return ret
 
-    def prsmot(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        return self.prop_i32(NProp.pressure_motion, i, v)
+    def cstspd(self, i):  # {{{2
+        # type: (int) -> float
+        txt = db.get(NProp.coasting_speed).current(i)
+        ret = float(txt)
+        return ret
 
-    def prsfct(self, i, v=[]):  # {{{2
-        # type: (int, List[float]) -> float
-        return self.prop_flt(NProp.pressure_motion_factor, i, v)
+    def prsmot(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.pressure_motion).current(i)
+        ret = int(txt)
+        return ret
 
-    def palmDetect(self, v=None):  # {{{2
-        # type: (Optional[bool]) -> bool
-        return self.prop_bool(NProp.palm_detection, 0,
-                              [] if v is None else [v])
+    def prsfct(self, i):  # {{{2
+        # type: (int) -> float
+        txt = db.get(NProp.pressure_motion_factor).current(i)
+        ret = float(txt)
+        return ret
 
-    def palmDims(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        return self.prop_i32(NProp.palm_dimensions, i, v)
+    def palmDetect(self):  # {{{2
+        # type: () -> bool
+        txt = db.get(NProp.palm_detection).current(0)
+        ret = bool(txt)
+        return ret
 
-    def softareas(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        return self.prop_i32(NProp.soft_button_areas, i, v)
+    def palmDims(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.palm_dimensions).current(i)
+        ret = int(txt)
+        return ret
 
-    def twoprs(self, v=None):  # {{{2
-        # type: (Optional[int]) -> int
-        return self.prop_i32(NProp.two_finger_pressure, 0,
-                             [] if v is None else [v])
+    def softareas(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.soft_button_areas).current(i)
+        ret = int(txt)
+        return ret
 
-    def twowid(self, v=None):  # {{{2
-        # type: (Optional[int]) -> int
-        return self.prop_i32(NProp.two_finger_width, 0,
-                             [] if v is None else [v])
+    def twoprs(self):  # {{{2
+        # type: () -> int
+        txt = db.get(NProp.two_finger_pressure).current(0)
+        ret = int(txt)
+        return ret
 
-    def scrdist(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        return self.prop_i32(NProp.scrolling_distance, i, v)
+    def twowid(self):  # {{{2
+        # type: () -> int
+        txt = db.get(NProp.two_finger_width).current(0)
+        ret = int(txt)
+        return ret
 
-    def gestures(self, v=None):  # {{{2
-        # type: (Optional[bool]) -> bool
-        return self.prop_bool(NProp.gestures, 0, [] if v is None else [v])
+    def scrdist(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.scrolling_distance).current(i)
+        ret = int(txt)
+        return ret
 
-    def noise(self, i, v=[]):  # {{{2
-        # type: (int, List[int]) -> int
-        return self.prop_i32(NProp.noise_cancellation, i, v)
+    def gestures(self):  # {{{2
+        # type: () -> bool
+        txt = db.get(NProp.gestures).current(0)
+        ret = bool(txt)
+        return ret
+
+    def noise(self, i):  # {{{2
+        # type: (int) -> int
+        txt = db.get(NProp.noise_cancellation).current(i)
+        ret = int(txt)
+        return ret
 
     def props(self):  # {{{2
         # type: () -> Tuple[List[bool], List[int]]
@@ -407,44 +613,26 @@ class XInputDB(object):  # {{{1
         vals = [_vals.get(i, 0) for i in range(max(_vals.keys()) + 1)]
         return btns, vals
 
-    def apply(self, fn):  # {{{1
-        # type: (Callable[[List[Text]], bool]) -> bool
+    def apply(self, fn, f_changed):  # {{{1
+        # type: (Callable[[List[Text]], bool], bool) -> bool
+        info("-------- start apply() function -------------------------------")
         self._callback = fn
 
-        self.edges(0, [self._edges[i].get() for i in range(4)])  # 274
-        self.finger(0, [self._finger[i].get() for i in range(3)])  # 275
-        self.taptime(xi._taptime.get())  # 276
-        self.tapmove(xi._tapmove.get())  # 277
-        self.tapdurs(0, [self._tapdurs[i].get() for i in range(3)])  # 278
-        self.twoprs(xi._twoprs.get())  # 281
-        self.twowid(xi._twowid.get())  # 282
-        self.scrdist(0, [self._scrdist[i].get() for i in range(2)])  # 283
-        self.edgescrs(0, [self._edgescrs[i].get() for i in range(3)])  # 284
-        self.twofingerscroll(0, [
-            self._twofingerscroll[i].get() for i in range(2)])  # 285
-        self.movespd(0, [self._movespd[i].get() for i in range(4)])  # 286
-        self.lckdrags(self._lckdrags.get())  # 288
-        self.lckdragstimeout(self._lckdragstimeout.get())  # 289
-        self.clks(0, [self._clks[i].get() for i in range(3)])  # 290
-        self.taps(0, [self._taps[i].get() for i in range(7)])  # 291
-        self.cirscr(self._cirscr.get())  # 292
-        self.cirdis(self._cirdis.get())  # 293
-        self.cirtrg(self._cirtrg.get())  # 294
-        self.cirpad(self._cirpad.get())  # 295
-        self.palmDetect(self._palmDetect.get())  # 296
-        self.palmDims(0, [self._palmDims[i].get() for i in range(2)])  # 297
-        self.cstspd(0, [self._cstspd[i].get() for i in range(2)])  # 298
-        # xi.prsmot(i, xi._prsmot[i].get())  # 299 TODO: ??? not work ???
-        self.prsfct(0, [self._prsfct[i].get() for i in range(2)])  # 300
-        self.gestures(self._gestures.get())  # 303
-        self.softareas(0, [self._softareas[i].get() for i in range(8)])  # 307
-        self.noise(0, [self._noise[i].get() for i in range(2)])  # 308
+        for prop in db.enum():
+            if not f_changed:
+                pass
+            elif not prop.is_changed():
+                continue
+            info("syncing {}...".format(prop.prop.n))
+            prop.sync()
+
         return False
 
-    def apply_cmd(self, cmd):  # {{{1
+    @classmethod  # apply_cmd # {{{1
+    def apply_cmd(cls, cmd):
         # type: (List[Text]) -> bool
         if not common.opts.fDryrun:
-            info("command invoked: " + str(cmd))
+            info("command invoked: " + Text(cmd))
             subprocess.call(cmd)
         return False
 
@@ -453,12 +641,12 @@ class XInputDB(object):  # {{{1
         # from GUI.
         ret = []  # type: List[List[Text]]
 
-        def apply(cmd):
+        def apply_log(cmd):
             # type: (List[Text]) -> bool
             ret.append(cmd)
             return False
 
-        self.apply(apply)
+        self.apply(apply_log, False)
         return ret
 
     def dumpdb(self):  # {{{2
@@ -473,7 +661,7 @@ class XInputDB(object):  # {{{1
             ret[prop.n] = prop
             return False
 
-        self.apply(apply)
+        self.apply(apply, False)
         return ret
 
     def dumps(self):  # {{{2
@@ -481,12 +669,12 @@ class XInputDB(object):  # {{{1
         # from GUI.
         cmds = []  # type: List[List[Text]]
 
-        def apply(cmd):
+        def apply_log(cmd):
             # type: (List[Text]) -> bool
             cmds.append(cmd)
             return False
 
-        self.apply(apply)
+        self.apply(apply_log, False)
 
         ret = u""
         for line in cmds:
@@ -525,7 +713,7 @@ def options():  # {{{1
         if ret is True:
             return None
         print("synaptics was detected as {} device".format(ret))
-        XInputDB.dev = ret
+        xi.dev = ret
     common.opts.fDryrun = opts.dry_run
     common.opts.file_encoding = opts.file_encoding
     common.opts.fnameIn = opts.fnameIn
@@ -599,7 +787,9 @@ class Gui(object):  # {{{1
         _id = Text(repr(wid))
         if _id not in NProp.hintnums:
             return
-        txt = NProp.hinttext[NProp.hintnums[_id]]
+        n = NProp.hintnums[_id]
+        txt = NProp.hinttext[n]
+        txt = Text(n) + txt
         self.test.delete(1.0, tk.END)
         self.test.insert(tk.END, txt)
 
@@ -642,7 +832,7 @@ class Gui(object):  # {{{1
 
     def cmdapply(self):  # {{{2
         # type: () -> None
-        xi.apply(xi.apply_cmd)
+        xi.apply(xi.apply_cmd, True)
 
     def cmdsave(self):  # {{{2
         # type: () -> None
@@ -686,7 +876,7 @@ class Gui(object):  # {{{1
         msg = bs.decode(enc)
         fp.write(msg + u"\n")
         bs = subprocess.check_output("xinput list-props {}".format(
-            XInputDB.dev), shell=True)
+            xi.dev), shell=True)
         msg = bs.decode(enc)
         fp.write(msg + u"\n")
         fp.write(u"\n\n--- current settings (in app)---\n")
@@ -739,9 +929,9 @@ def buildgui(opts):  # {{{1
     gui.mouse = tk.Canvas(frm1, width=_100, height=_100)
     frm13 = tk.Frame(frm1)
 
-    gui_canvas(gui.mouse, ["white"] * 7, [0] * 4,
-               [[xi.edges(i) for i in range(4)],
-                [xi.softareas(i) for i in range(8)]])
+    # gui_canvas(gui.mouse, ["white"] * 7, [0] * 4,
+    #            [[xi.edges(i) for i in range(4)],
+    #             [xi.softareas(i) for i in range(8)]])
 
     tk.Label(frm11, text="Information (update to click labels, "
                          "can be used for scroll test)").pack(anchor=tk.W)
@@ -854,9 +1044,9 @@ def buildgui(opts):  # {{{1
 
     frm = tk.Frame(page1)
     gui.label3(frm, "Tap Time", NProp.tap_time, width=w)
-    xi._taptime = gui.slider(frm, 1, 255, xi.taptime())
+    xi._taptime.append(gui.slider(frm, 1, 255, xi.taptime()))
     tk.Label(frm, text="Tap Move", width=10).pack(side=tk.LEFT)
-    xi._tapmove = gui.slider(frm, 1, 255, xi.tapmove())
+    xi._tapmove.append(gui.slider(frm, 1, 255, xi.tapmove()))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page1)
     gui.label3(frm, "Tap Durations", NProp.tap_durations, width=w)
@@ -868,7 +1058,7 @@ def buildgui(opts):  # {{{1
     # page4 - Area {{{2
     frm = tk.Frame(page4)
     gui.label3(frm, "Palm detect", NProp.palm_detection)
-    xi._palmDetect = gui.checkbox(frm, "on", xi.palmDetect())
+    xi._palmDetect.append(gui.checkbox(frm, "on", xi.palmDetect()))
     gui.label3(frm, "Palm dimensions", NProp.palm_dimensions)
     xi._palmDims.append(gui.slider(frm, 0, 3100, xi.palmDims(0)))
     xi._palmDims.append(gui.slider(frm, 0, 3100, xi.palmDims(1)))
@@ -925,9 +1115,9 @@ def buildgui(opts):  # {{{1
 
     frm = tk.Frame(page2)
     gui.label3(frm, "Two-Finger Pressure", NProp.two_finger_pressure)
-    xi._twoprs = gui.slider(frm, 1, 1000, xi.twoprs())
+    xi._twoprs.append(gui.slider(frm, 1, 1000, xi.twoprs()))
     gui.label3(frm, "Two-Finger Width", NProp.two_finger_width)
-    xi._twowid = gui.slider(frm, 1, 1000, xi.twowid())
+    xi._twowid.append(gui.slider(frm, 1, 1000, xi.twowid()))
     frm.pack(anchor=tk.W)
 
     frm = tk.Frame(page2)
@@ -965,27 +1155,28 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     gui.label3(frm, "Locked Drags", NProp.locked_drags, width=w)
-    xi._lckdrags = gui.checkbox(frm, "on", xi.lckdrags())
+    xi._lckdrags.append(gui.checkbox(frm, "on", xi.lckdrags()))
     tk.Label(frm, text="timeout").pack(side=tk.LEFT)
-    xi._lckdragstimeout = gui.slider(frm, 1, 100000, xi.lckdragstimeout())
-    xi._gestures = gui.checkbox(frm, "gesture", xi.gestures())
+    xi._lckdragstimeout.append(
+            gui.slider(frm, 1, 100000, xi.lckdragstimeout()))
+    xi._gestures.append(gui.checkbox(frm, "gesture", xi.gestures()))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page5)
     gui.label3(frm, "Circular scrolling", NProp.circular_scrolling, width=w)
-    xi._cirscr = gui.checkbox(frm, "on", xi.cirscr())
-    xi._cirpad = gui.checkbox(frm, "Circular-pad", xi.cirpad())
+    xi._cirscr.append(gui.checkbox(frm, "on", xi.cirscr()))
+    xi._cirpad.append(gui.checkbox(frm, "Circular-pad", xi.cirpad()))
     gui.label3(frm, "  Distance", NProp.circular_scrolling_distance)
-    xi._cirdis = gui.slider_flt(frm, 0.01, 100, xi.cirdis())
+    xi._cirdis.append(gui.slider_flt(frm, 0.01, 100, xi.cirdis()))
     gui.label3(frm, "  Trigger", NProp.circular_scrolling_trigger)
-    xi._cirtrg = gui.combobox(frm, ["0: All Edges",
-                                    "1: Top Edge",
-                                    "2: Top Right Corner",
-                                    "3: Right Edge",
-                                    "4: Bottom Right Corner",
-                                    "5: Bottom Edge",
-                                    "6: Bottom Left Corner",
-                                    "7: Left Edge",
-                                    "8: Top Left Corner"], xi.cirtrg())
+    xi._cirtrg.append(gui.combobox(frm, ["0: All Edges",
+                                         "1: Top Edge",
+                                         "2: Top Right Corner",
+                                         "3: Right Edge",
+                                         "4: Bottom Right Corner",
+                                         "5: Bottom Edge",
+                                         "6: Bottom Left Corner",
+                                         "7: Left Edge",
+                                         "8: Top Left Corner"], xi.cirtrg()))
     frm.pack(anchor=tk.W)
 
     # page6 - Information {{{2

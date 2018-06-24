@@ -117,8 +117,8 @@ class NProp(object):  # {{{1
     middle_button_timeout = 280
     two_finger_pressure = 281
     two_finger_width = 282
-    scrolling_distance = 283
-    edge_scrolling = 284
+    scrdist = scrolling_distance = 283
+    edgescrs = edge_scrolling = 284
     two_finger_scrolling = 285
     move_speed = 286
     off = 287
@@ -126,10 +126,10 @@ class NProp(object):  # {{{1
     locked_drags_timeout = 289
     tap_action = 290
     click_action = 291
-    circular_scrolling = 292
-    circular_scrolling_distance = 293
-    circular_scrolling_trigger = 294
-    circular_pad = 295
+    cirscr = circular_scrolling = 292
+    cirdis = circular_scrolling_distance = 293
+    cirtrg = circular_scrolling_trigger = 294
+    cirpad = circular_pad = 295
     palm_detection = 296
     palm_dimensions = 297
     coasting_speed = 298
@@ -141,7 +141,7 @@ class NProp(object):  # {{{1
     capabilities = 304
     pad_resolution = 305
     area = 306
-    soft_button_areas = 307
+    softareas = soft_button_areas = 307
     noise_cancellation = 308
     device_product_id = 267
     device_node = 266
@@ -787,6 +787,37 @@ Noise cancellation
         noise_cancellation: PropFormat(("HorizonHysterisis", "{:d}"),
                                        ("VerticalHysterisis", "{:d}")),
     }
+    xconfs[tap_move] = xconfs[tap_durations]
+
+    xinputs = {  # {{{1
+        edges: 4,  # 274
+        finger: 3,  # 275
+        tap_time: 1,  # 276
+        tap_move: 1,  # 277
+        tap_durations: 3,  # 278
+        two_finger_pressure: 1,  # 281
+        two_finger_width: 1,  # 282
+        scrdist: 2,  # 283
+        edgescrs: 3,  # 284
+        two_finger_scrolling: 2,
+        move_speed: 4,  # 286
+        locked_drags: 1,  # 288
+        locked_drags_timeout: 1,
+        tap_action: 7,  # 290
+        click_action: 3,  # 291
+        cirscr: 1,  # 292
+        cirdis: 1,  # 293
+        cirtrg: 1,  # 294
+        cirpad: 1,  # 295
+        palm_detection: 1,  # 296
+        palm_dimensions: 2,  # 297
+        coasting_speed: 2,  # 298
+        pressure_motion: 1,  # 299 ???
+        pressure_motion_factor: 2,  # 300
+        gestures: 1,  # 303
+        softareas: 8,  # 307
+        noise_cancellation: 2,  # 308
+    }
 
     def __init__(self, n, idx):  # {{{1
         # type: (int, int) -> None
@@ -796,6 +827,8 @@ Noise cancellation
         self.vals = [None] * len(NProp.xconfs[n])   # type: List[Any]
         self.wrote = []  # type: List[int]
         self.n_section = -1
+
+        self.xins = [None] * NProp.xinputs[n]   # type: List[Any]
 
     @classmethod  # from_cmd {{{1
     def from_cmd(cls, cmd):
