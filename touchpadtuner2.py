@@ -13,7 +13,7 @@ import sys
 import os
 import subprocess
 import logging
-from logging import debug as debg, info
+from logging import debug as debg, info, warning as warn
 
 import common
 from common import (BoolVar, CmbVar, FltVar, IntVar,
@@ -708,6 +708,7 @@ def options():  # {{{1
     opts = p.parse_args()
 
     logging.getLogger().setLevel(opts.verbose)
+    logging.getLogger().name = "touchpad"
     if opts.device_id == 0:
         ret = XInputDB.determine_devid()
         if ret is True:
@@ -842,6 +843,7 @@ class Gui(object):  # {{{1
         for n, p in xi.dumpdb().items():
             prop = db[n]
             prop.update(p)
+        warn("output saved to {}".format(opts.fnameOut))
         xf.save(opts.fnameOut, opts.fnameIn, db)
 
     def cmdquit(self):  # {{{2
