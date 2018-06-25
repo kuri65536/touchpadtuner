@@ -4,6 +4,7 @@ import sys
 import os
 import unittest
 import subprocess
+from typing import Any
 
 sys.path.append(os.path.realpath(os.path.join(
                 os.path.dirname(__file__), "..")))
@@ -20,6 +21,16 @@ else:
 
 class cfg:
     fDryrun = False
+
+
+class MockVar(object):
+    def __init__(self, v):
+        # type: (Any) -> None
+        self.value = v
+
+    def get(self):
+        # type: (Any) -> Any
+        return self.value
 
 
 class Test(unittest.TestCase):
@@ -42,24 +53,25 @@ class Test(unittest.TestCase):
         seq = [xi.clks(0), xi.clks(1), xi.clks(2)]
         if cfg.fDryrun:
             return
+        prop = tgt.db.get(xprops.NProp.click_action)
 
         # change it.
         xi.fDryrun = False
         rnd = (seq[0] + 1) % 3 + 1  # make 1 -> 3
-        tmp = [rnd, seq[1], seq[2]]
-        xi.clks(0, tmp)
+        prop.vars = [MockVar(rnd), MockVar(seq[1]), MockVar(seq[2])]
+        prop.sync()
         res = xi.clks(0)
         assert res == rnd, "{} != {} ?can't set?".format(res, rnd)
 
         xi.fDryrun = True
         rnd = (rnd + 1) % 3 + 1  # make 1 -> 3
-        tmp = [rnd, seq[1], seq[2]]
-        xi.clks(0, tmp)
-        res = xi.clks(0)
+        prop.vars = [MockVar(rnd), MockVar(seq[1]), MockVar(seq[2])]
+        prop.sync()
         assert res != rnd, "{} == {} ?dry run enabled??".format(res, rnd)
 
         xi.fDryrun = False
-        xi.clks(0, seq)  # restore.
+        prop.vars = [MockVar(seq[0]), MockVar(seq[1]), MockVar(seq[2])]
+        prop.sync()
         res = xi.clks(0)
         assert res != rnd, "{} == {} ?can't set?".format(res, rnd)
 

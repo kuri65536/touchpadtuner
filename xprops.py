@@ -30,15 +30,18 @@ def allok(seq):
 class PropFormat(Sized):  # {{{1
     def __init__(self, *args):  # {{{1
         # type: (Tuple[Text, ...]) -> None
-        self.fmts = args
-        if args[0][0] == "dummy":
-            self.fmts = ()
         self.dgts = []  # type: List[int]
+        if args[0][0] == "dummy":
+            self.fmts = ()  # type: Tuple[Tuple[Text, Text], ...]
+            return
+        src = []  # type: List[Tuple[Text, Text]]
         for arg in args:
             n = 0
             if len(arg) >= 3:
                 n = int(arg[2])
+            src.append((arg[0], arg[1]))
             self.dgts.append(n)
+        self.fmts = tuple(src)
 
     def __len__(self):  # {{{1
         # type: () -> int
