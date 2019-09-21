@@ -20,6 +20,7 @@ from common import (BoolVar, CmbVar, FltVar, IntVar,
                     open_file, )
 from xprops import NProp, NPropDb
 from xconf import XConfFile
+import wraptk as draw
 
 try:
     from typing import (Any, Callable, Dict, IO, Iterable, List, Optional,
@@ -766,10 +767,10 @@ class Gui(object):  # {{{1
         if len(kw) < 1:
             kw["anchor"] = tk.W
         if "width" in kw:
-            ret = tk.Label(parent, text=txt, width=kw["width"])
+            ret = draw.label(parent, txt, width=kw["width"])
             del kw["width"]
         else:
-            ret = tk.Label(parent, text=txt)
+            ret = draw.label(parent, txt)
         ret.pack(**kw)
         ret.bind("<Button-1>", self.hint)
         _id = Text(repr(ret))
@@ -935,14 +936,14 @@ def buildgui(opts):  # {{{1
     #            [[xi.edges(i) for i in range(4)],
     #             [xi.softareas(i) for i in range(8)]])
 
-    tk.Label(frm11, text="Information (update to click labels, "
-                         "can be used for scroll test)").pack(anchor=tk.W)
+    draw.label(frm11, "Information (update to click labels, "
+               "can be used for scroll test)").pack(anchor=tk.W)
     gui.test = tk.Text(frm11, height=10)
     gui.test.pack(padx=5, pady=5, expand=True, fill="x")
     gui.test.insert(tk.END, "Test field\n\n  and click title labels to show "
                     "description of properties.")
 
-    tk.Label(frm13, text="Current", width=7).pack(anchor=tk.W)
+    draw.label(frm13, "Current", width=7).pack(anchor=tk.W)
     gui.txt1 = tk.Entry(frm13, width=6)
     gui.txt1.pack()
     gui.txt2 = tk.Entry(frm13, width=6)
@@ -995,34 +996,34 @@ def buildgui(opts):  # {{{1
     gui.label2(page1, "Click actions", NProp.click_action)
     frm = tk.Frame(page1)
     frm.pack()
-    tk.Label(frm, text="1-Finger").pack(side=tk.LEFT, padx=10)
+    draw.label(frm, "1-Finger").pack(side=tk.LEFT, padx=10)
     xi._clks.append(gui.combobox(frm, seq, xi.clks(0)))
-    tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
+    draw.label(frm, "2-Finger").pack(side=tk.LEFT)
     xi._clks.append(gui.combobox(frm, seq, xi.clks(1)))
-    tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
+    draw.label(frm, "3-Finger").pack(side=tk.LEFT)
     xi._clks.append(gui.combobox(frm, seq, xi.clks(2)))
 
     # Tap Action
     gui.label2(page1, "Tap actions", NProp.tap_action)
     frm = tk.Frame(page1)
     frm.pack(anchor=tk.W)
-    tk.Label(frm, text="RT", width=10).pack(side=tk.LEFT, padx=10)
+    draw.label(frm, "RT", width=10).pack(side=tk.LEFT, padx=10)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(0)))
-    tk.Label(frm, text="RB").pack(side=tk.LEFT)
+    draw.label(frm, "RB").pack(side=tk.LEFT)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(1)))
     frm = tk.Frame(page1)
     frm.pack(anchor=tk.W)
-    tk.Label(frm, text="LT", width=10).pack(side=tk.LEFT, padx=10)
+    draw.label(frm, "LT", width=10).pack(side=tk.LEFT, padx=10)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(2)))
-    tk.Label(frm, text="LB").pack(side=tk.LEFT)
+    draw.label(frm, "LB").pack(side=tk.LEFT)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(3)))
     frm = tk.Frame(page1)
     frm.pack(anchor=tk.W)
-    tk.Label(frm, text="1-Finger", width=10).pack(side=tk.LEFT, padx=10)
+    draw.label(frm, "1-Finger", width=10).pack(side=tk.LEFT, padx=10)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(4)))
-    tk.Label(frm, text="2-Finger").pack(side=tk.LEFT)
+    draw.label(frm, "2-Finger").pack(side=tk.LEFT)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(5)))
-    tk.Label(frm, text="3-Finger").pack(side=tk.LEFT)
+    draw.label(frm, "3-Finger").pack(side=tk.LEFT)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(6)))
 
     # Tap Threshold
@@ -1035,7 +1036,7 @@ def buildgui(opts):  # {{{1
     # xii.fingerlow.pack(side=tk.LEFT, expand=True, fill="x")
     # frm_.pack(fill="x")
     # frm_ = tk.Frame(page1)
-    tk.Label(frm_, text="FingerHigh", width=10).pack(side=tk.LEFT)
+    draw.label(frm_, "FingerHigh", width=10).pack(side=tk.LEFT)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(1)))
     gui.fingerhig = gui.lastwid
     gui.lastwid.bind("<ButtonRelease-1>", gui.cmdfingerhig)
@@ -1047,7 +1048,7 @@ def buildgui(opts):  # {{{1
     frm = tk.Frame(page1)
     gui.label3(frm, "Tap Time", NProp.tap_time, width=w)
     xi._taptime.append(gui.slider(frm, 1, 255, xi.taptime()))
-    tk.Label(frm, text="Tap Move", width=10).pack(side=tk.LEFT)
+    draw.label(frm, "Tap Move", width=10).pack(side=tk.LEFT)
     xi._tapmove.append(gui.slider(frm, 1, 255, xi.tapmove()))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page1)
@@ -1070,7 +1071,7 @@ def buildgui(opts):  # {{{1
     gui.label3(frm, "Edge-x", NProp.edges)
     xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(0)))
     xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(1)))
-    tk.Label(frm, text="Edge-y").pack(side=tk.LEFT)
+    draw.label(frm, "Edge-y").pack(side=tk.LEFT)
     xi._edges.append(gui.slider(frm, 0, 1800, xi.edges(2)))
     xi._edges.append(gui.slider(frm, 0, 1800, xi.edges(3)))
     frm.pack(anchor=tk.W)
@@ -1079,23 +1080,23 @@ def buildgui(opts):  # {{{1
                "(RB=Right Button, MB=Middle Button)", NProp.soft_button_areas,
                anchor=tk.W)
     frm = tk.Frame(page4)
-    tk.Label(frm, text="RB-Left", width=10).pack(side=tk.LEFT, padx=10)
+    draw.label(frm, "RB-Left", width=10).pack(side=tk.LEFT, padx=10)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(0)))
-    tk.Label(frm, text="RB-Right", width=10).pack(side=tk.LEFT)
+    draw.label(frm, "RB-Right", width=10).pack(side=tk.LEFT)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(1)))
-    tk.Label(frm, text="RB-Top", width=10).pack(side=tk.LEFT)
+    draw.label(frm, "RB-Top", width=10).pack(side=tk.LEFT)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(2)))
-    tk.Label(frm, text="RB-Bottom", width=10).pack(side=tk.LEFT)
+    draw.label(frm, "RB-Bottom", width=10).pack(side=tk.LEFT)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(3)))
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page4)
-    tk.Label(frm, text="MB-Left", width=10).pack(side=tk.LEFT, padx=10)
+    draw.label(frm, "MB-Left", width=10).pack(side=tk.LEFT, padx=10)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(4)))
-    tk.Label(frm, text="MB-Right", width=10).pack(side=tk.LEFT)
+    draw.label(frm, "MB-Right", width=10).pack(side=tk.LEFT)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(5)))
-    tk.Label(frm, text="MB-Top", width=10).pack(side=tk.LEFT)
+    draw.label(frm, "MB-Top", width=10).pack(side=tk.LEFT)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(6)))
-    tk.Label(frm, text="MB-Bottom", width=10).pack(side=tk.LEFT)
+    draw.label(frm, "MB-Bottom", width=10).pack(side=tk.LEFT)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(7)))
     frm.pack(anchor=tk.W)
 
@@ -1146,7 +1147,7 @@ def buildgui(opts):  # {{{1
     gui.label3(frm, "Pressure Motion", NProp.pressure_motion, width=w)
     xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(0)))
     xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(1)))
-    tk.Label(frm, text="Factor").pack(side=tk.LEFT)
+    draw.label(frm, "Factor").pack(side=tk.LEFT)
     xi._prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct(0)))
     xi._prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct(1)))
     frm.pack(anchor=tk.W)
@@ -1158,7 +1159,7 @@ def buildgui(opts):  # {{{1
     frm = tk.Frame(page5)
     gui.label3(frm, "Locked Drags", NProp.locked_drags, width=w)
     xi._lckdrags.append(gui.checkbox(frm, "on", xi.lckdrags()))
-    tk.Label(frm, text="timeout").pack(side=tk.LEFT)
+    draw.label(frm, "timeout").pack(side=tk.LEFT)
     xi._lckdragstimeout.append(
             gui.slider(frm, 1, 100000, xi.lckdragstimeout()))
     xi._gestures.append(gui.checkbox(frm, "gesture", xi.gestures()))
@@ -1183,30 +1184,30 @@ def buildgui(opts):  # {{{1
 
     # page6 - Information {{{2
     frm = tk.Frame(page6)
-    tk.Label(frm, text="Capability", width=20).pack(side=tk.LEFT)
-    tk.Label(frm, text="...").pack(side=tk.LEFT)
+    draw.label(frm, "Capability", width=20).pack(side=tk.LEFT)
+    draw.label(frm, "...").pack(side=tk.LEFT)
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page6)
-    tk.Label(frm, text="Resolution [unit/mm]", width=20).pack(side=tk.LEFT)
-    tk.Label(frm, text="...").pack(side=tk.LEFT)
+    draw.label(frm, "Resolution [unit/mm]", width=20).pack(side=tk.LEFT)
+    draw.label(frm, "...").pack(side=tk.LEFT)
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page6)
-    tk.Label(frm, text="XInput2 Keywords", width=20).pack(side=tk.LEFT)
+    draw.label(frm, "XInput2 Keywords", width=20).pack(side=tk.LEFT)
     txt = tk.Text(frm, height=3)
     txt.insert(tk.END, XInputDB.textprops())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
     frm = tk.Frame(page6)
-    tk.Label(frm, text="Restore", width=20).pack(side=tk.LEFT)
+    draw.label(frm, "Restore", width=20).pack(side=tk.LEFT)
     txt = tk.Text(frm, height=3)
     txt.insert(tk.END, xi.dumps())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
 
     # page3 - About (License information) {{{2
-    tk.Label(page3, text="TouchPad Tuner").pack()
-    tk.Label(page3, text="Shimoda (kuri65536@hotmail.com)").pack()
-    tk.Label(page3, text="License: Mozilla Public License 2.0").pack()
+    draw.label(page3, "TouchPad Tuner").pack()
+    draw.label(page3, "Shimoda (kuri65536@hotmail.com)").pack()
+    draw.label(page3, "License: Mozilla Public License 2.0").pack()
     tk.Button(page3, text="Make log for the report",  # TODO: align right
               command=gui.cmdreport).pack()  # .pack(anchor=tk.N)
 
@@ -1259,7 +1260,7 @@ def gui_canvas(inst, btns,  # {{{2
     _65 = 65
     _80 = 80
 
-    inst.create_rectangle(0, 0, _100, _100, fill='white')  # ,stipple='gray25')
+    draw.rectangle(inst, 0, 0, _100, _100, fill='white')  # ,stipple='gray25')
     if len(prms) > 0:
         edges = prms[0]
         gui.ex1, gui.ey1 = gui_scale(edges[0], edges[2])
@@ -1274,30 +1275,29 @@ def gui_canvas(inst, btns,  # {{{2
               gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2))
 
     if gui.s1x1 != gui.s1x2 and gui.s1y1 != gui.s1y2:
-        inst.create_rectangle(gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2,
-                              fill="green")  # area for RB
+        draw.rectangle(inst, gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2,
+                       fill="green")  # area for RB
     if gui.s2x1 != gui.s2x2 and gui.s2y1 != gui.s2y2:
-        inst.create_rectangle(gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2,
-                              fill="blue")  # area for MB
-    inst.create_rectangle(gui.ex1, gui.ey1, gui.ex2, gui.ey2,
-                          width=2)
+        draw.rectangle(inst, gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2,
+                       fill="blue")  # area for MB
+    draw.rectangle(inst, gui.ex1, gui.ey1, gui.ex2, gui.ey2, width=2)
 
     # +-++++++-+
     # | |||||| |  (60 - 30) / 3 = 10
-    inst.create_rectangle(_20, _20, _80, _80, fill='white')
-    inst.create_rectangle(_35, _20, _45, _45, fill=btns[0])
-    inst.create_rectangle(_45, _20, _55, _45, fill=btns[1])
-    inst.create_rectangle(_55, _20, _65, _45, fill=btns[2])
+    draw.rectangle(inst, _20, _20, _80, _80, fill='white')
+    draw.rectangle(inst, _35, _20, _45, _45, fill=btns[0])
+    draw.rectangle(inst, _45, _20, _55, _45, fill=btns[1])
+    draw.rectangle(inst, _55, _20, _65, _45, fill=btns[2])
     # inst.create_arc(_20, _20, _80, _40, style='arc', fill='white')
     # inst.create_line(_20, _40, _20, _80, _80, _80, _80, _40)
-    inst.create_rectangle(_40, _55, _60, _60, fill=btns[5])
-    inst.create_rectangle(_40, _60, _60, _65, fill=btns[6])
+    draw.rectangle(inst, _40, _55, _60, _60, fill=btns[5])
+    draw.rectangle(inst, _40, _60, _60, _65, fill=btns[6])
 
     x, y = gui_scale(vals[0], vals[1])
-    inst.create_oval(x - 2, y - 2, x + 2, y + 2, fill="black")
+    draw.oval(inst, x - 2, y - 2, x + 2, y + 2, fill="black")
     x, y = gui_scale(vals[2], vals[3])
     x, y = x % _100, y % _100
-    inst.create_oval(x - 2, y - 2, x + 2, y + 2, fill="red")
+    draw.oval(inst, x - 2, y - 2, x + 2, y + 2, fill="red")
 
 
 # globals {{{1
@@ -1319,9 +1319,9 @@ def main():  # {{{1
         return 2
     debg("build GUI...")
     gui = buildgui(opts)
-    gui.root.after_idle(gui.callback_idle)
+    gui.root.after_idle(gui.callback_idle)  # type: ignore # for Tk
     debg("start gui...")
-    gui.root.mainloop()
+    gui.root.mainloop()  # type: ignore # for Tk
     return 0
 
 
