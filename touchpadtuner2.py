@@ -900,8 +900,8 @@ class Gui(object):  # {{{1
         self.root = root
         self.fingerlow = self.fingerhig = tk.Scale(root)
         self.mouse = tk.Canvas(root)
-        self.test = tk.Text(root)
-        self.txt1 = self.txt2 = self.txt3 = self.txt4 = tk.Entry(root)
+        self.test = draw.text(root)
+        self.txt1 = self.txt2 = self.txt3 = self.txt4 = draw.entry(root)
 
         self.ex1 = self.ey1 = 0
         self.ex2 = self.ey2 = 0
@@ -938,19 +938,19 @@ def buildgui(opts):  # {{{1
 
     draw.label(frm11, "Information (update to click labels, "
                "can be used for scroll test)").pack(anchor=tk.W)
-    gui.test = tk.Text(frm11, height=10)
+    gui.test = draw.text(frm11, 10)
     gui.test.pack(padx=5, pady=5, expand=True, fill="x")
     gui.test.insert(tk.END, "Test field\n\n  and click title labels to show "
                     "description of properties.")
 
     draw.label(frm13, "Current", width=7).pack(anchor=tk.W)
-    gui.txt1 = tk.Entry(frm13, width=6)
+    gui.txt1 = draw.entry(frm13, 6)
     gui.txt1.pack()
-    gui.txt2 = tk.Entry(frm13, width=6)
+    gui.txt2 = draw.entry(frm13, 6)
     gui.txt2.pack()
-    gui.txt3 = tk.Entry(frm13, width=6)
+    gui.txt3 = draw.entry(frm13, 6)
     gui.txt3.pack()
-    gui.txt4 = tk.Entry(frm13, width=6)
+    gui.txt4 = draw.entry(frm13, 6)
     gui.txt4.pack()
 
     gui.mouse.pack(side=tk.LEFT, anchor=tk.N)
@@ -1193,13 +1193,13 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
     frm = draw.frame(page6)
     draw.label(frm, "XInput2 Keywords", width=20).pack(side=tk.LEFT)
-    txt = tk.Text(frm, height=3)
+    txt = draw.text(frm, 3)
     txt.insert(tk.END, XInputDB.textprops())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
     frm = draw.frame(page6)
     draw.label(frm, "Restore", width=20).pack(side=tk.LEFT)
-    txt = tk.Text(frm, height=3)
+    txt = draw.text(frm, 3)
     txt.insert(tk.END, xi.dumps())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
