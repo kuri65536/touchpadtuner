@@ -30,4 +30,13 @@ def label(par, t, **kw):  # {{{1
     return tk.Label(par, text=t, **kw)  # type: ignore # for Tk
 
 
+def frame(par):  # {{{1
+    # type: (tk.Widget) -> tk.Frame
+    return tk.Frame(par)  # type: ignore # for Tk
+
+
+def var_int():  # {{{1
+    # type: () -> tk.IntVar
+    return tk.IntVar()  # type: ignore # for Tk
+
 # vi: ft=python:et:fdm=marker:nowrap:tw=80

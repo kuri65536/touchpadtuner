@@ -727,7 +727,7 @@ def options():  # {{{1
 class Gui(object):  # {{{1
     def checkbox(self, parent, title, cur):  # {{{2
         # type: (tk.Widget, str, bool) -> BoolVar
-        ret = tk.IntVar()
+        ret = draw.var_int()
         ret.set(1 if cur else 0)
         tk.Checkbutton(parent, text=title,
                        variable=ret).pack(side=tk.LEFT)
@@ -736,7 +736,7 @@ class Gui(object):  # {{{1
 
     def slider(self, parent, from_, to, cur):  # {{{2
         # type: (tk.Widget, int, int, int) -> IntVar
-        ret = tk.IntVar()
+        ret = draw.var_int()
         ret.set(cur)
         wid = tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
                        variable=ret)
@@ -919,7 +919,7 @@ def buildgui(opts):  # {{{1
         os.path.splitext(os.path.basename(__file__))[0]))
 
     # 1st: pad, mouse and indicator {{{2
-    frm1 = tk.Frame(root, height=5)
+    frm1 = draw.frame(root, height=5)
 
     ''' +--root--------------------+
         |+--frm1------------------+|
@@ -928,9 +928,9 @@ def buildgui(opts):  # {{{1
         |+--frm3------------------+|
         +--------------------------+
     '''
-    frm11 = tk.Frame(frm1)
+    frm11 = draw.frame(frm1)
     gui.mouse = tk.Canvas(frm1, width=_100, height=_100)
-    frm13 = tk.Frame(frm1)
+    frm13 = draw.frame(frm1)
 
     # gui_canvas(gui.mouse, ["white"] * 7, [0] * 4,
     #            [[xi.edges(i) for i in range(4)],
@@ -959,21 +959,21 @@ def buildgui(opts):  # {{{1
 
     # 2nd: tab control
     nb = ttk.Notebook(root)
-    page1 = tk.Frame(nb)
+    page1 = draw.frame(nb)
     nb.add(page1, text="Tap/Click")
-    page4 = tk.Frame(nb)
+    page4 = draw.frame(nb)
     nb.add(page4, text="Area")
-    page2 = tk.Frame(nb)
+    page2 = draw.frame(nb)
     nb.add(page2, text="Two-Fingers")
-    page5 = tk.Frame(nb)
+    page5 = draw.frame(nb)
     nb.add(page5, text="Misc.")
-    page6 = tk.Frame(nb)
+    page6 = draw.frame(nb)
     nb.add(page6, text="Information")
-    page3 = tk.Frame(nb)
+    page3 = draw.frame(nb)
     nb.add(page3, text="About")
 
     # 3rd: main button
-    frm3 = tk.Frame(root)
+    frm3 = draw.frame(root)
 
     btn3 = tk.Button(frm3, text="Quit", command=gui.cmdquit)
     btn3.pack(side=tk.RIGHT, padx=10)
@@ -994,7 +994,7 @@ def buildgui(opts):  # {{{1
     seq = (["Disabled", "Left-Click", "Middel-Click", "Right-Click"] +
            [str(i) for i in range(4, 10)])
     gui.label2(page1, "Click actions", NProp.click_action)
-    frm = tk.Frame(page1)
+    frm = draw.frame(page1)
     frm.pack()
     draw.label(frm, "1-Finger").pack(side=tk.LEFT, padx=10)
     xi._clks.append(gui.combobox(frm, seq, xi.clks(0)))
@@ -1005,19 +1005,19 @@ def buildgui(opts):  # {{{1
 
     # Tap Action
     gui.label2(page1, "Tap actions", NProp.tap_action)
-    frm = tk.Frame(page1)
+    frm = draw.frame(page1)
     frm.pack(anchor=tk.W)
     draw.label(frm, "RT", width=10).pack(side=tk.LEFT, padx=10)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(0)))
     draw.label(frm, "RB").pack(side=tk.LEFT)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(1)))
-    frm = tk.Frame(page1)
+    frm = draw.frame(page1)
     frm.pack(anchor=tk.W)
     draw.label(frm, "LT", width=10).pack(side=tk.LEFT, padx=10)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(2)))
     draw.label(frm, "LB").pack(side=tk.LEFT)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(3)))
-    frm = tk.Frame(page1)
+    frm = draw.frame(page1)
     frm.pack(anchor=tk.W)
     draw.label(frm, "1-Finger", width=10).pack(side=tk.LEFT, padx=10)
     xi._taps.append(gui.combobox(frm, seq, xi.taps(4)))
@@ -1028,14 +1028,14 @@ def buildgui(opts):  # {{{1
 
     # Tap Threshold
     w = 10
-    frm_ = tk.Frame(page1)
+    frm_ = draw.frame(page1)
     gui.label3(frm_, "FingerLow", NProp.finger, width=w)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(0)))
     gui.fingerlow = gui.lastwid
     gui.lastwid.bind("<ButtonRelease-1>", gui.cmdfingerlow)
     # xii.fingerlow.pack(side=tk.LEFT, expand=True, fill="x")
     # frm_.pack(fill="x")
-    # frm_ = tk.Frame(page1)
+    # frm_ = draw.frame(page1)
     draw.label(frm_, "FingerHigh", width=10).pack(side=tk.LEFT)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(1)))
     gui.fingerhig = gui.lastwid
@@ -1045,13 +1045,13 @@ def buildgui(opts):  # {{{1
     v = IntVar(None)
     xi._finger.append(v)  # dummy
 
-    frm = tk.Frame(page1)
+    frm = draw.frame(page1)
     gui.label3(frm, "Tap Time", NProp.tap_time, width=w)
     xi._taptime.append(gui.slider(frm, 1, 255, xi.taptime()))
     draw.label(frm, "Tap Move", width=10).pack(side=tk.LEFT)
     xi._tapmove.append(gui.slider(frm, 1, 255, xi.tapmove()))
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page1)
+    frm = draw.frame(page1)
     gui.label3(frm, "Tap Durations", NProp.tap_durations, width=w)
     xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(0)))
     xi._tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs(1)))
@@ -1059,7 +1059,7 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     # page4 - Area {{{2
-    frm = tk.Frame(page4)
+    frm = draw.frame(page4)
     gui.label3(frm, "Palm detect", NProp.palm_detection)
     xi._palmDetect.append(gui.checkbox(frm, "on", xi.palmDetect()))
     gui.label3(frm, "Palm dimensions", NProp.palm_dimensions)
@@ -1067,7 +1067,7 @@ def buildgui(opts):  # {{{1
     xi._palmDims.append(gui.slider(frm, 0, 3100, xi.palmDims(1)))
     frm.pack(anchor=tk.W)
 
-    frm = tk.Frame(page4)
+    frm = draw.frame(page4)
     gui.label3(frm, "Edge-x", NProp.edges)
     xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(0)))
     xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(1)))
@@ -1079,7 +1079,7 @@ def buildgui(opts):  # {{{1
     gui.label2(page4, "Soft Button Areas "
                "(RB=Right Button, MB=Middle Button)", NProp.soft_button_areas,
                anchor=tk.W)
-    frm = tk.Frame(page4)
+    frm = draw.frame(page4)
     draw.label(frm, "RB-Left", width=10).pack(side=tk.LEFT, padx=10)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(0)))
     draw.label(frm, "RB-Right", width=10).pack(side=tk.LEFT)
@@ -1089,7 +1089,7 @@ def buildgui(opts):  # {{{1
     draw.label(frm, "RB-Bottom", width=10).pack(side=tk.LEFT)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(3)))
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page4)
+    frm = draw.frame(page4)
     draw.label(frm, "MB-Left", width=10).pack(side=tk.LEFT, padx=10)
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(4)))
     draw.label(frm, "MB-Right", width=10).pack(side=tk.LEFT)
@@ -1100,7 +1100,7 @@ def buildgui(opts):  # {{{1
     xi._softareas.append(gui.slider(frm, 0, 3100, xi.softareas(7)))
     frm.pack(anchor=tk.W)
 
-    frm = tk.Frame(page4)
+    frm = draw.frame(page4)
     gui.label3(frm, "Edge scroll", NProp.edge_scrolling)
     xi._edgescrs.append(gui.checkbox(frm, "Vert", xi.edgescrs(0)))
     xi._edgescrs.append(gui.checkbox(frm, "Horz", xi.edgescrs(1)))
@@ -1108,7 +1108,7 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     # page2 - two-fingers {{{2
-    frm = tk.Frame(page2)
+    frm = draw.frame(page2)
     gui.label3(frm, "Two-Finger Scrolling", NProp.two_finger_scrolling)
     xi._twofingerscroll.append(
             gui.checkbox(frm, "Vert", xi.twofingerscroll(0)))
@@ -1116,14 +1116,14 @@ def buildgui(opts):  # {{{1
             gui.checkbox(frm, "Horz", xi.twofingerscroll(1)))
     frm.pack(anchor=tk.W)
 
-    frm = tk.Frame(page2)
+    frm = draw.frame(page2)
     gui.label3(frm, "Two-Finger Pressure", NProp.two_finger_pressure)
     xi._twoprs.append(gui.slider(frm, 1, 1000, xi.twoprs()))
     gui.label3(frm, "Two-Finger Width", NProp.two_finger_width)
     xi._twowid.append(gui.slider(frm, 1, 1000, xi.twowid()))
     frm.pack(anchor=tk.W)
 
-    frm = tk.Frame(page2)
+    frm = draw.frame(page2)
     gui.label3(frm, "Scrolling Distance", NProp.scrolling_distance)
     xi._scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist(0)))
     xi._scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist(1)))
@@ -1131,19 +1131,19 @@ def buildgui(opts):  # {{{1
 
     # page5 - Misc {{{2
     w = 13
-    frm = tk.Frame(page5)
+    frm = draw.frame(page5)
     gui.label3(frm, "Noise Cancel (x-y)", NProp.noise_cancellation, width=w)
     xi._noise.append(gui.slider(frm, 1, 1000, xi.noise(0)))
     xi._noise.append(gui.slider(frm, 1, 1000, xi.noise(1)))
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page5)
+    frm = draw.frame(page5)
     gui.label3(frm, "Move speed", NProp.move_speed, width=w)
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(0)))
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(1)))
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(2)))
     xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(3)))
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page5)
+    frm = draw.frame(page5)
     gui.label3(frm, "Pressure Motion", NProp.pressure_motion, width=w)
     xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(0)))
     xi._prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot(1)))
@@ -1151,12 +1151,12 @@ def buildgui(opts):  # {{{1
     xi._prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct(0)))
     xi._prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct(1)))
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page5)
+    frm = draw.frame(page5)
     gui.label3(frm, "Coasting speed", NProp.coasting_speed, width=w)
     xi._cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd(0)))
     xi._cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd(1)))
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page5)
+    frm = draw.frame(page5)
     gui.label3(frm, "Locked Drags", NProp.locked_drags, width=w)
     xi._lckdrags.append(gui.checkbox(frm, "on", xi.lckdrags()))
     draw.label(frm, "timeout").pack(side=tk.LEFT)
@@ -1164,7 +1164,7 @@ def buildgui(opts):  # {{{1
             gui.slider(frm, 1, 100000, xi.lckdragstimeout()))
     xi._gestures.append(gui.checkbox(frm, "gesture", xi.gestures()))
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page5)
+    frm = draw.frame(page5)
     gui.label3(frm, "Circular scrolling", NProp.circular_scrolling, width=w)
     xi._cirscr.append(gui.checkbox(frm, "on", xi.cirscr()))
     xi._cirpad.append(gui.checkbox(frm, "Circular-pad", xi.cirpad()))
@@ -1183,21 +1183,21 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     # page6 - Information {{{2
-    frm = tk.Frame(page6)
+    frm = draw.frame(page6)
     draw.label(frm, "Capability", width=20).pack(side=tk.LEFT)
     draw.label(frm, "...").pack(side=tk.LEFT)
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page6)
+    frm = draw.frame(page6)
     draw.label(frm, "Resolution [unit/mm]", width=20).pack(side=tk.LEFT)
     draw.label(frm, "...").pack(side=tk.LEFT)
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page6)
+    frm = draw.frame(page6)
     draw.label(frm, "XInput2 Keywords", width=20).pack(side=tk.LEFT)
     txt = tk.Text(frm, height=3)
     txt.insert(tk.END, XInputDB.textprops())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
-    frm = tk.Frame(page6)
+    frm = draw.frame(page6)
     draw.label(frm, "Restore", width=20).pack(side=tk.LEFT)
     txt = tk.Text(frm, height=3)
     txt.insert(tk.END, xi.dumps())
