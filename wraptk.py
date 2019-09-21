@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Text
+from typing import Any, Optional, Text
 
 if sys.version_info[0] == 3:
     import tkinter as tk
@@ -12,7 +12,7 @@ else:
 
 if False:
     tk
-    Any, Text
+    Any, Optional, Text
 
 
 def rectangle(inst, x1, y1, x2, y2, **kw):  # {{{1
@@ -31,12 +31,19 @@ def label(par, t, **kw):  # {{{1
 
 
 def frame(par):  # {{{1
-    # type: (tk.Widget) -> tk.Frame
+    # type: (Optional[tk.Tk, tk.Widget]) -> tk.Frame
     return tk.Frame(par)  # type: ignore # for Tk
+
+
+def button(par, t, **kw):  # {{{1
+    # type: (tk.Widget, Text, Any) -> tk.Button
+    return tk.Button(par, text=t, **kw)  # type: ignore # for Tk
 
 
 def var_int():  # {{{1
     # type: () -> tk.IntVar
     return tk.IntVar()  # type: ignore # for Tk
 
+
+# end of file {{{1
 # vi: ft=python:et:fdm=marker:nowrap:tw=80

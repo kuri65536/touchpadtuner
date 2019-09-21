@@ -975,13 +975,13 @@ def buildgui(opts):  # {{{1
     # 3rd: main button
     frm3 = draw.frame(root)
 
-    btn3 = tk.Button(frm3, text="Quit", command=gui.cmdquit)
+    btn3 = draw.button(frm3, "Quit", command=gui.cmdquit)
     btn3.pack(side=tk.RIGHT, padx=10)
-    btn2 = tk.Button(frm3, text="Save", command=gui.cmdsave)
+    btn2 = draw.button(frm3, "Save", command=gui.cmdsave)
     btn2.pack(side=tk.RIGHT, padx=10)
-    btn1 = tk.Button(frm3, text="Apply", command=gui.cmdapply)
+    btn1 = draw.button(frm3, "Apply", command=gui.cmdapply)
     btn1.pack(side=tk.RIGHT, padx=10)
-    btn0 = tk.Button(frm3, text="Restore", command=gui.cmdrestore)
+    btn0 = draw.button(frm3, "Restore", command=gui.cmdrestore)
     btn0.pack(side=tk.RIGHT, padx=10)
 
     frm1.pack(expand=1, fill="both")
@@ -1208,8 +1208,8 @@ def buildgui(opts):  # {{{1
     draw.label(page3, "TouchPad Tuner").pack()
     draw.label(page3, "Shimoda (kuri65536@hotmail.com)").pack()
     draw.label(page3, "License: Mozilla Public License 2.0").pack()
-    tk.Button(page3, text="Make log for the report",  # TODO: align right
-              command=gui.cmdreport).pack()  # .pack(anchor=tk.N)
+    draw.button(page3, "Make log for the report",  # TODO: align right
+                command=gui.cmdreport).pack()  # .pack(anchor=tk.N)
 
     # pad.config(height=4)
     cmdorg = xi.dump()
