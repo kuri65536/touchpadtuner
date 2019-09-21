@@ -48,10 +48,20 @@ def entry(par, *args):  # {{{1
 
 
 def text(par, *args):  # {{{1
-    # type: (tk.Widget, int) -> tk.Entry
+    # type: (Union[tk.Tk, tk.Widget], int) -> tk.Entry
     if len(args) > 0:
         return tk.Text(par, height=args[0])  # type: ignore # for Tk
     return tk.Text(par)  # type: ignore # for Tk
+
+
+def text_insert(txt, n, t):  # {{{1
+    # type: (Union[tk.Text, tk.Entry], int, Text) -> None
+    txt.insert(n, t)  # type: ignore # for Tk
+
+
+def text_delete(txt, n1, n2):  # {{{1
+    # type: (Union[tk.Text, tk.Entry], int, int) -> None
+    txt.delete(n1, n2)  # type: ignore # for Tk
 
 
 def var_int():  # {{{1

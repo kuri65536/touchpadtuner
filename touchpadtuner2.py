@@ -792,20 +792,20 @@ class Gui(object):  # {{{1
         n = NProp.hintnums[_id]
         txt = NProp.hinttext[n]
         txt = Text(n) + txt
-        self.test.delete(1.0, tk.END)
-        self.test.insert(tk.END, txt)
+        draw.text_delete(self.test, 1, tk.END)
+        draw.text_insert(self.test, tk.END, txt)
 
     def callback_idle(self):  # {{{2
         # type: () -> None
         btns, vals = xi.props()
-        self.txt1.delete(0, tk.END)
-        self.txt2.delete(0, tk.END)
-        self.txt3.delete(0, tk.END)
-        self.txt4.delete(0, tk.END)
-        self.txt1.insert(0, "{}".format(vals[0]))
-        self.txt2.insert(0, "{}".format(vals[1]))
-        self.txt3.insert(0, "{}".format(vals[2]))
-        self.txt4.insert(0, "{}".format(vals[3]))
+        draw.text_delete(self.txt1, 0, tk.END)
+        draw.text_delete(self.txt2, 0, tk.END)
+        draw.text_delete(self.txt3, 0, tk.END)
+        draw.text_delete(self.txt4, 0, tk.END)
+        draw.text_insert(self.txt1, 0, "{}".format(vals[0]))
+        draw.text_insert(self.txt2, 0, "{}".format(vals[1]))
+        draw.text_insert(self.txt3, 0, "{}".format(vals[2]))
+        draw.text_insert(self.txt4, 0, "{}".format(vals[3]))
         _btns = ["black" if i else "white" for i in btns]
         gui_canvas(self.mouse, _btns, vals, [])
         self.root.after(100, self.callback_idle)
@@ -940,8 +940,9 @@ def buildgui(opts):  # {{{1
                "can be used for scroll test)").pack(anchor=tk.W)
     gui.test = draw.text(frm11, 10)
     gui.test.pack(padx=5, pady=5, expand=True, fill="x")
-    gui.test.insert(tk.END, "Test field\n\n  and click title labels to show "
-                    "description of properties.")
+    draw.text_insert(gui.test, tk.END,
+                     "Test field\n\n  and click title labels to show "
+                     "description of properties.")
 
     draw.label(frm13, "Current", width=7).pack(anchor=tk.W)
     gui.txt1 = draw.entry(frm13, 6)
@@ -1194,13 +1195,13 @@ def buildgui(opts):  # {{{1
     frm = draw.frame(page6)
     draw.label(frm, "XInput2 Keywords", width=20).pack(side=tk.LEFT)
     txt = draw.text(frm, 3)
-    txt.insert(tk.END, XInputDB.textprops())
+    draw.text_insert(txt, tk.END, XInputDB.textprops())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
     frm = draw.frame(page6)
     draw.label(frm, "Restore", width=20).pack(side=tk.LEFT)
     txt = draw.text(frm, 3)
-    txt.insert(tk.END, xi.dumps())
+    draw.text_insert(txt, tk.END, xi.dumps())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
 
