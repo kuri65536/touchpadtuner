@@ -728,18 +728,17 @@ class Gui(object):  # {{{1
     def checkbox(self, parent, title, cur):  # {{{2
         # type: (tk.Widget, str, bool) -> BoolVar
         ret = draw.var_int()
-        ret.set(1 if cur else 0)
-        tk.Checkbutton(parent, text=title,
-                       variable=ret).pack(side=tk.LEFT)
+        draw.set_int(ret, 1 if cur else 0)
+        draw.chkbtn(parent, title, ret).pack(side=tk.LEFT)
         _ret = BoolVar(ret)
         return _ret
 
     def slider(self, parent, from_, to, cur):  # {{{2
         # type: (tk.Widget, int, int, int) -> IntVar
         ret = draw.var_int()
-        ret.set(cur)
-        wid = tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
-                       variable=ret)
+        draw.set_int(ret, cur)
+        wid = draw.scale(parent, from_, to, tk.HORIZONTAL,
+                         variable=ret)
         wid.pack(side=tk.LEFT)
         self.lastwid = wid
         _ret = IntVar(ret)
@@ -747,17 +746,14 @@ class Gui(object):  # {{{1
 
     def slider_flt(self, parent, from_, to, cur):  # {{{2
         # type: (tk.Widget, float, float, float) -> FltVar
-        ret = tk.DoubleVar()
-        ret.set(cur)
-        tk.Scale(parent, from_=from_, to=to, orient=tk.HORIZONTAL,
-                 variable=ret, resolution=0.01).pack(side=tk.LEFT)
-        _ret = FltVar(ret)
-        return _ret
+        ret = FltVar(cur)
+        draw.scale(parent, from_, to, tk.HORIZONTAL,
+                   variable=ret.get_var(), resolution=0.01).pack(side=tk.LEFT)
+        return ret
 
     def combobox(self, parent, seq, cur):  # {{{2
         # type: (tk.Widget, List[str], int) -> CmbVar
-        ret = ttk.Combobox(parent, values=seq)
-        ret.current(cur)
+        ret = draw.cmbbox(parent, seq, cur)
         ret.pack(side=tk.LEFT)
         _ret = CmbVar(ret)
         return _ret
@@ -772,7 +768,7 @@ class Gui(object):  # {{{1
         else:
             ret = draw.label(parent, txt)
         ret.pack(**kw)
-        ret.bind("<Button-1>", self.hint)
+        draw.bind(ret, "<Button-1>", self.hint)
         _id = Text(repr(ret))
         NProp.hintnums[_id] = n
 
@@ -808,23 +804,23 @@ class Gui(object):  # {{{1
         draw.text_insert(self.txt4, 0, "{}".format(vals[3]))
         _btns = ["black" if i else "white" for i in btns]
         gui_canvas(self.mouse, _btns, vals, [])
-        self.root.after(100, self.callback_idle)
+        self.root.after(100, self.callback_idle)  # type: ignore # for Tk
 
     def cmdfingerlow(self, ev):  # {{{2
         # type: (tk.Event) -> None
-        vl = self.fingerlow.get()
-        vh = self.fingerhig.get()
+        vl = draw.scale_get(self.fingerlow)
+        vh = draw.scale_get(self.fingerhig)
         if vl < vh:
             return
-        self.fingerlow.set(vh - 1)
+        draw.scale_set(self.fingerlow, vh - 1)
 
     def cmdfingerhig(self, ev):  # {{{2
         # type: (tk.Event) -> None
-        vl = self.fingerlow.get()
-        vh = self.fingerhig.get()
+        vl = draw.scale_get(self.fingerlow)
+        vh = draw.scale_get(self.fingerhig)
         if vl < vh:
             return
-        self.fingerhig.set(vl + 1)
+        draw.scale_set(self.fingerhig, vl + 1)
 
     def cmdrestore(self):  # {{{2
         # type: () -> None
@@ -849,7 +845,7 @@ class Gui(object):  # {{{1
 
     def cmdquit(self):  # {{{2
         # type: () -> None
-        self.root.quit()
+        draw.root_quit(self.root)
 
     def cmdreport(self):  # {{{2
         # type: () -> None
@@ -898,8 +894,8 @@ class Gui(object):  # {{{1
     def __init__(self, root):  # {{{2
         # type: (tk.Tk) -> None
         self.root = root
-        self.fingerlow = self.fingerhig = tk.Scale(root)
-        self.mouse = tk.Canvas(root)
+        self.fingerlow = self.fingerhig = draw.scale(root)
+        self.mouse = draw.canvas(root)
         self.test = draw.text(root)
         self.txt1 = self.txt2 = self.txt3 = self.txt4 = draw.entry(root)
 
@@ -919,7 +915,7 @@ def buildgui(opts):  # {{{1
         os.path.splitext(os.path.basename(__file__))[0]))
 
     # 1st: pad, mouse and indicator {{{2
-    frm1 = draw.frame(root, height=5)
+    frm1 = draw.frame(root, 5)
 
     ''' +--root--------------------+
         |+--frm1------------------+|
@@ -929,7 +925,7 @@ def buildgui(opts):  # {{{1
         +--------------------------+
     '''
     frm11 = draw.frame(frm1)
-    gui.mouse = tk.Canvas(frm1, width=_100, height=_100)
+    gui.mouse = draw.canvas(frm1, _100, _100)
     frm13 = draw.frame(frm1)
 
     # gui_canvas(gui.mouse, ["white"] * 7, [0] * 4,
@@ -959,7 +955,7 @@ def buildgui(opts):  # {{{1
     frm11.pack(side=tk.LEFT, anchor=tk.N, expand=True, fill="x")
 
     # 2nd: tab control
-    nb = ttk.Notebook(root)
+    nb = ttk.Notebook(root)  # type: ignore
     page1 = draw.frame(nb)
     nb.add(page1, text="Tap/Click")
     page4 = draw.frame(nb)
@@ -1033,14 +1029,14 @@ def buildgui(opts):  # {{{1
     gui.label3(frm_, "FingerLow", NProp.finger, width=w)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(0)))
     gui.fingerlow = gui.lastwid
-    gui.lastwid.bind("<ButtonRelease-1>", gui.cmdfingerlow)
+    draw.bind(gui.lastwid, "<ButtonRelease-1>", gui.cmdfingerlow)
     # xii.fingerlow.pack(side=tk.LEFT, expand=True, fill="x")
     # frm_.pack(fill="x")
     # frm_ = draw.frame(page1)
     draw.label(frm_, "FingerHigh", width=10).pack(side=tk.LEFT)
     xi._finger.append(gui.slider(frm_, 1, 255, cur=xi.finger(1)))
     gui.fingerhig = gui.lastwid
-    gui.lastwid.bind("<ButtonRelease-1>", gui.cmdfingerhig)
+    draw.bind(gui.lastwid, "<ButtonRelease-1>", gui.cmdfingerhig)
     # gui.fingerhig.pack(side=tk.LEFT, expand=True, fill="x")
     frm_.pack(fill="x", anchor=tk.W)
     v = IntVar(None)
