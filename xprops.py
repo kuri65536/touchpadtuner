@@ -827,11 +827,11 @@ Noise cancellation
         self.n = n
         self.idx = idx
         self.val = None  # type: Any
-        self.vals = [None] * len(NProp.xconfs[n])   # type: List[Any]
+        self.vals = [None] * len(self.xconfs[n])   # type: List[Any]
         self.wrote = []  # type: List[int]
         self.n_section = -1
 
-        self.xins = [None] * NProp.xinputs[n]   # type: List[Any]
+        self.xins = [None] * self.xinputs[n]   # type: List[Any]
 
     @classmethod  # from_cmd {{{1
     def from_cmd(cls, cmd):

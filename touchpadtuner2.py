@@ -18,7 +18,8 @@ from logging import debug as debg, info, warning as warn
 import common
 from common import (BoolVar, CmbVar, FltVar, IntVar,
                     open_file, )
-from xprops import NProp, NPropDb
+from xprops import NPropDb
+from xprops2 import NProp1804 as NProp
 from xconf import XConfFile
 import wraptk as draw
 
@@ -234,17 +235,17 @@ class db(object):  # {{{1
     db = {}  # type: Dict[int, NPropGui]
 
     @classmethod  # regist {{{1
-    def regist(cls, item):  # {{{1
+    def regist(cls, item):
         # type: (NPropGui) -> None
         cls.db[item.prop.n] = item
 
-    @classmethod  # regist {{{1
-    def get(cls, n):  # {{{1
+    @classmethod  # get {{{1
+    def get(cls, n):
         # type: (int) -> NPropGui
         return cls.db[n]
 
-    @classmethod  # regist {{{1
-    def enum(cls):  # {{{1
+    @classmethod  # enum {{{1
+    def enum(cls):
         # type: () -> Iterable[NPropGui]
         for i in cls.db.values():
             yield i
@@ -268,8 +269,9 @@ class XInputDB(object):  # {{{1
 
     cmd_wat = "query-state"
 
-    def __init__(self):
+    def __init__(self):  # {{{1
         # type: () -> None
+        NProp.auto_id()
         self._callback = apply_none  # type: Callable[[List[Text]], bool]
 
         self._edges = NPropGuiInt(NProp.edges, 32)  # 274
@@ -1304,6 +1306,8 @@ gui = None  # type: Optional[Gui]
 # main {{{1
 def main():  # {{{1
     # type: () -> int
+
+    NProp.auto_id()
     global gui
     debg("fetch settings, options and arguments...")
     opts = options()
