@@ -18,10 +18,12 @@ from logging import debug as debg, info, warning as warn
 import common
 from common import (BoolVar, CmbVar, FltVar, IntVar,
                     open_file, )
-from xprops import NPropDb
+from xprops import NProp as NProp1, NPropDb
 from xprops2 import NProp1804 as NProp
 from xconf import XConfFile
 import wraptk as draw
+
+NProp1
 
 try:
     from typing import (Any, Callable, Dict, IO, Iterable, List, Optional,
@@ -52,10 +54,10 @@ def apply_none(cmd):  # {{{1
 
 
 class NPropGui(object):  # {{{1
-    def __init__(self, n):  # {{{1
-        # type: (int) -> None
-        length = NProp.xinputs[n]
-        self.prop = NProp(n, 0)
+    def __init__(self, prop):  # {{{1
+        # type: (NProp1) -> None
+        length = prop.xinput
+        self.prop = prop
         self.length = length
         self.typ = "32"
         self.vars = []  # type: List[Any]
@@ -111,9 +113,9 @@ class NPropGui(object):  # {{{1
 
 
 class NPropGuiInt(NPropGui):  # {{{1
-    def __init__(self, n, typ):  # {{{1
-        # type: (int, int) -> None
-        NPropGui.__init__(self, n)
+    def __init__(self, prop, typ):  # {{{1
+        # type: (NProp1, int) -> None
+        NPropGui.__init__(self, prop)
         self.vars = []  # type: List[IntVar]
         self.typ = Text(typ)
         db.regist(self)
@@ -137,9 +139,9 @@ class NPropGuiInt(NPropGui):  # {{{1
 
 
 class NPropGuiFlt(NPropGui):   # {{{1
-    def __init__(self, n):  # {{{1
-        # type: (int) -> None
-        NPropGui.__init__(self, n)
+    def __init__(self, prop):  # {{{1
+        # type: (NProp1) -> None
+        NPropGui.__init__(self, prop)
         self.vars = []  # type: List[FltVar]
         db.regist(self)
 
@@ -176,9 +178,9 @@ class NPropGuiFlt(NPropGui):   # {{{1
 
 
 class NPropGuiBol(NPropGui):   # {{{1
-    def __init__(self, n):  # {{{1
-        # type: (int) -> None
-        NPropGui.__init__(self, n)
+    def __init__(self, prop):  # {{{1
+        # type: (NProp1) -> None
+        NPropGui.__init__(self, prop)
         self.typ = "8"
         self.vars = []  # type: List[BoolVar]
         db.regist(self)
@@ -205,9 +207,9 @@ class NPropGuiBol(NPropGui):   # {{{1
 
 
 class NPropGuiCmb(NPropGui):   # {{{1
-    def __init__(self, n, typ):  # {{{1
-        # type: (int, int) -> None
-        NPropGui.__init__(self, n)
+    def __init__(self, prop, typ):  # {{{1
+        # type: (NProp1, int) -> None
+        NPropGui.__init__(self, prop)
         self.typ = Text(typ)
         self.vars = []  # type: List[CmbVar]
         db.regist(self)
@@ -240,9 +242,9 @@ class db(object):  # {{{1
         cls.db[item.prop.n] = item
 
     @classmethod  # get {{{1
-    def get(cls, n):
-        # type: (int) -> NPropGui
-        return cls.db[n]
+    def get(cls, prop):
+        # type: (NProp1) -> NPropGui
+        return cls.db[prop.n]
 
     @classmethod  # enum {{{1
     def enum(cls):
@@ -387,6 +389,7 @@ class XInputDB(object):  # {{{1
     def prop_get(self, key):  # {{{1
         # type: (int) -> List[Text]
         cmd = self.cmd_shw.format(self.dev, key)
+        assert key > 0
         curb = subprocess.check_output(cmd, shell=True)
         curs = curb.decode("utf-8").strip()
         seq = curs.split(":")[1].split(",")
@@ -466,12 +469,12 @@ class XInputDB(object):  # {{{1
     def lckdragstimeout(self):  # {{{2
         # type: () -> int
         txt = db.get(NProp.locked_drags_timeout).current(0)
-        ret = int(txt)
+        ret = int(float(txt))
         return ret
 
     def cirscr(self):  # {{{2
         # type: () -> bool
-        txt = db.get(NProp.circular_scrolling).current(0)
+        txt = db.get(NProp.cirscr).current(0)
         ret = bool(txt)
         return ret
 
@@ -481,19 +484,19 @@ class XInputDB(object):  # {{{1
             # type: (List[Text]) -> bool
             cur = int(seq[0])
             return 0 <= cur <= 8
-        txt = db.get(NProp.circular_scrolling_trigger).current(0)
-        ret = int(txt)
+        txt = db.get(NProp.cirtrg).current(0)
+        ret = int(float(txt))
         return ret
 
     def cirpad(self):  # {{{2
         # type: () -> bool
-        txt = db.get(NProp.circular_pad).current(0)
+        txt = db.get(NProp.cirpad).current(0)
         ret = bool(txt)
         return ret
 
     def cirdis(self):  # {{{2
         # type: () -> float
-        txt = db.get(NProp.circular_scrolling_distance).current(0)
+        txt = db.get(NProp.cirdis).current(0)
         ret = float(txt)
         return ret
 
@@ -516,7 +519,7 @@ class XInputDB(object):  # {{{1
 
     def edgescrs(self, i):  # {{{2
         # type: (int) -> bool
-        txt = db.get(NProp.edge_scrolling).current(i)
+        txt = db.get(NProp.edgescrs).current(i)
         ret = bool(txt)
         return ret
 
@@ -529,11 +532,18 @@ class XInputDB(object):  # {{{1
     def prsmot(self, i):  # {{{2
         # type: (int) -> int
         txt = db.get(NProp.pressure_motion).current(i)
-        ret = int(txt)
+        try:
+            n = float(txt)
+            ret = int(n)
+        except ValueError:
+            ret = 0
         return ret
 
     def prsfct(self, i):  # {{{2
         # type: (int) -> float
+        prop = NProp.pressure_motion_factor
+        if not prop.is_valid():
+            return 0.0
         txt = db.get(NProp.pressure_motion_factor).current(i)
         ret = float(txt)
         return ret
@@ -552,7 +562,7 @@ class XInputDB(object):  # {{{1
 
     def softareas(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.soft_button_areas).current(i)
+        txt = db.get(NProp.softareas).current(i)
         ret = int(txt)
         return ret
 
@@ -570,7 +580,7 @@ class XInputDB(object):  # {{{1
 
     def scrdist(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.scrolling_distance).current(i)
+        txt = db.get(NProp.scrdist).current(i)
         ret = int(txt)
         return ret
 
@@ -760,8 +770,8 @@ class Gui(object):  # {{{1
         _ret = CmbVar(ret)
         return _ret
 
-    def label2(self, parent, txt, n, **kw):  # {{{2
-        # type: (tk.Widget, str, int, **Any) -> None
+    def label2(self, parent, txt, prop, **kw):  # {{{2
+        # type: (tk.Widget, str, NProp1, **Any) -> None
         if len(kw) < 1:
             kw["anchor"] = tk.W
         if "width" in kw:
@@ -772,13 +782,13 @@ class Gui(object):  # {{{1
         ret.pack(**kw)
         draw.bind(ret, "<Button-1>", self.hint)
         _id = Text(repr(ret))
-        NProp.hintnums[_id] = n
+        NProp.hintnums[_id] = prop.n  # TODO(shimoda): ???
 
-    def label3(self, parent, txt, n, **kw):  # {{{2
-        # type: (tk.Widget, str, int, **Any) -> None
+    def label3(self, parent, txt, prop, **kw):  # {{{2
+        # type: (tk.Widget, str, NProp1, **Any) -> None
         if "side" not in kw:
             kw["side"] = tk.LEFT
-        self.label2(parent, txt, n, **kw)
+        self.label2(parent, txt, prop, **kw)
 
     def hint(self, ev):  # {{{2
         # type: (tk.Event) -> None
@@ -790,16 +800,16 @@ class Gui(object):  # {{{1
         n = NProp.hintnums[_id]
         txt = NProp.hinttext[n]
         txt = Text(n) + txt
-        draw.text_delete(self.test, 1, tk.END)
+        draw.enty_delete(self.test, 0, tk.END)
         draw.text_insert(self.test, tk.END, txt)
 
     def callback_idle(self):  # {{{2
         # type: () -> None
         btns, vals = xi.props()
-        draw.text_delete(self.txt1, 0, tk.END)
-        draw.text_delete(self.txt2, 0, tk.END)
-        draw.text_delete(self.txt3, 0, tk.END)
-        draw.text_delete(self.txt4, 0, tk.END)
+        draw.enty_delete(self.txt1, 0, tk.END)
+        draw.enty_delete(self.txt2, 0, tk.END)
+        draw.enty_delete(self.txt3, 0, tk.END)
+        draw.enty_delete(self.txt4, 0, tk.END)
         draw.text_insert(self.txt1, 0, "{}".format(vals[0]))
         draw.text_insert(self.txt2, 0, "{}".format(vals[1]))
         draw.text_insert(self.txt3, 0, "{}".format(vals[2]))
@@ -1076,7 +1086,7 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     gui.label2(page4, "Soft Button Areas "
-               "(RB=Right Button, MB=Middle Button)", NProp.soft_button_areas,
+               "(RB=Right Button, MB=Middle Button)", NProp.softareas,
                anchor=tk.W)
     frm = draw.frame(page4)
     draw.label(frm, "RB-Left", width=10).pack(side=tk.LEFT, padx=10)
@@ -1100,7 +1110,7 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     frm = draw.frame(page4)
-    gui.label3(frm, "Edge scroll", NProp.edge_scrolling)
+    gui.label3(frm, "Edge scroll", NProp.edgescrs)
     xi._edgescrs.append(gui.checkbox(frm, "Vert", xi.edgescrs(0)))
     xi._edgescrs.append(gui.checkbox(frm, "Horz", xi.edgescrs(1)))
     xi._edgescrs.append(gui.checkbox(frm, "Corner Coasting", xi.edgescrs(2)))
@@ -1123,7 +1133,7 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     frm = draw.frame(page2)
-    gui.label3(frm, "Scrolling Distance", NProp.scrolling_distance)
+    gui.label3(frm, "Scrolling Distance", NProp.scrdist)
     xi._scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist(0)))
     xi._scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist(1)))
     frm.pack(anchor=tk.W)
@@ -1164,12 +1174,12 @@ def buildgui(opts):  # {{{1
     xi._gestures.append(gui.checkbox(frm, "gesture", xi.gestures()))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
-    gui.label3(frm, "Circular scrolling", NProp.circular_scrolling, width=w)
+    gui.label3(frm, "Circular scrolling", NProp.cirscr, width=w)
     xi._cirscr.append(gui.checkbox(frm, "on", xi.cirscr()))
     xi._cirpad.append(gui.checkbox(frm, "Circular-pad", xi.cirpad()))
-    gui.label3(frm, "  Distance", NProp.circular_scrolling_distance)
+    gui.label3(frm, "  Distance", NProp.cirdis)
     xi._cirdis.append(gui.slider_flt(frm, 0.01, 100, xi.cirdis()))
-    gui.label3(frm, "  Trigger", NProp.circular_scrolling_trigger)
+    gui.label3(frm, "  Trigger", NProp.cirtrg)
     xi._cirtrg.append(gui.combobox(frm, ["0: All Edges",
                                          "1: Top Edge",
                                          "2: Top Right Corner",

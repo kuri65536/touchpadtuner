@@ -98,7 +98,12 @@ def text_insert(txt, n, t):  # {{{1
 
 
 def text_delete(txt, n1, n2):  # {{{1
-    # type: (Union[tk.Text, tk.Entry], int, int) -> None
+    # type: (tk.Text, Text, Text) -> None
+    txt.delete(n1, n2)  # type: ignore # for Tk
+
+
+def enty_delete(txt, n1, n2):  # {{{1
+    # type: (tk.Entry, Union[int, Text], Text) -> None
     txt.delete(n1, n2)  # type: ignore # for Tk
 
 
