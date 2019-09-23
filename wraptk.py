@@ -86,7 +86,7 @@ def entry(par, *args):  # {{{1
 
 
 def text(par, *args):  # {{{1
-    # type: (Union[tk.Tk, tk.Widget], int) -> tk.Entry
+    # type: (Union[tk.Tk, tk.Widget], int) -> tk.Text
     if len(args) > 0:
         return tk.Text(par, height=args[0])  # type: ignore # for Tk
     return tk.Text(par)  # type: ignore # for Tk

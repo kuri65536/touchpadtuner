@@ -111,9 +111,6 @@ class NProp(object):  # {{{1
       x Device Node (266):                        "/dev/input/event8"
     '''
 
-    # hint numbers {{{2
-    hintnums = {}  # type: Dict[Text, int]
-
     def __init__(self, key, fmts, hint):  # {{{1
         # type: (Text, Optional[PropFormat], Text) -> None
         fmts = fmts if fmts is not None else PropFormat(("dummy", ""))

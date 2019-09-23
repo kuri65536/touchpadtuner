@@ -737,6 +737,10 @@ def options():  # {{{1
 
 # gui {{{1
 class Gui(object):  # {{{1
+    # {{{1
+    # hint numbers {{{2
+    hintnums = {}  # type: Dict[Text, int]
+
     def checkbox(self, parent, title, cur):  # {{{2
         # type: (tk.Widget, str, bool) -> BoolVar
         ret = draw.var_int()
@@ -782,7 +786,7 @@ class Gui(object):  # {{{1
         ret.pack(**kw)
         draw.bind(ret, "<Button-1>", self.hint)
         _id = Text(repr(ret))
-        NProp.hintnums[_id] = prop.n  # TODO(shimoda): ???
+        self.hintnums[_id] = prop.n
 
     def label3(self, parent, txt, prop, **kw):  # {{{2
         # type: (tk.Widget, str, NProp1, **Any) -> None
@@ -795,12 +799,13 @@ class Gui(object):  # {{{1
         wid = getattr(ev, "widget")
         assert isinstance(wid, tk.Widget)
         _id = Text(repr(wid))
-        if _id not in NProp.hintnums:
+        if _id not in self.hintnums:
             return
-        n = NProp.hintnums[_id]
-        txt = NProp.hinttext[n]
-        txt = Text(n) + txt
-        draw.enty_delete(self.test, 0, tk.END)
+        n = self.hintnums[_id]
+        prop = NProp.prop_get(n)
+        txt = prop.hint if prop is not None else ""
+        txt = "property id:" + Text(n) + txt
+        draw.text_delete(self.test, "1.0", tk.END)
         draw.text_insert(self.test, tk.END, txt)
 
     def callback_idle(self):  # {{{2

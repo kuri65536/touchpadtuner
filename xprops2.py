@@ -445,10 +445,7 @@ class NProp1804(NProp):  # {{{1
               integer.
         ''')
 
-    # hint numbers {{{2
-    hintnums = {}  # type: Dict[Text, int]
-    # hint text {{{1
-    hinttext = {
+    __not_implemented_options__ = {  # {{{1
         1: ''' {{{2
        Option "Protocol" "string"
               Specifies which kernel driver will be used by this driver.  This
@@ -545,6 +542,8 @@ class NProp1804(NProp):  # {{{1
               Property: "Synaptics Middle Button Timeout"
         ''',
         97: '''
+        97: PropFormat(("VertResolution", "{:d}"),
+                       ("HorizResolution", "{:d}")),
        Option "VertResolution" "integer"
               Resolution  of  X  coordinates in units/millimeter. The value is
               used  together  with  HorizResolution  to   compensate   unequal
@@ -562,6 +561,10 @@ class NProp1804(NProp):  # {{{1
               be read.  Property: "Synaptics Pad Resolution"
         ''',
         96: '''
+        96: PropFormat(("AreaLeftEdge", "{:d}"),
+                       ("AreaRightEdge", "{:d}"),
+                       ("AreaTopEdge", "{:d}"),
+                       ("AreaBottomEdge", "{:d}")),
        Option "AreaLeftEdge" "integer"
               Ignore movements, scrolling and tapping which take place left of
               this edge.  The option is disabled by default and can be enabled
@@ -595,125 +598,6 @@ class NProp1804(NProp):  # {{{1
               touchpad. Property: "Synaptics Area"
         ''',
     }
-    xconfs = {  # {{{1
-        0: PropFormat(("dummy", ''' {{{2
-       Option "Device" "string"
-              This  option  specifies the device file in your "/dev" directory
-              which will be used to access the physical device.  Normally  you
-              should  use  something like "/dev/input/eventX", where X is some
-              integer.
-
-       Option "ClickPad" "boolean"
-              Whether  the  device  is  a  click  pad.  A click pad device has
-              button(s) integrated into the touchpad surface.  The  user  must
-              press  downward  on  the touchpad in order to generated a button
-              press. This property may be set automatically  if  a  click  pad
-              device  is detected at initialization time. Property: "Synaptics
-              ClickPad"
-
-       Option "Protocol" "string"
-              Specifies which kernel driver will be used by this driver.  This
-              is   the  list  of  supported  drivers  and  their  default  use
-              scenarios.
-
-              auto-dev   automatic, default (recommend)
-              event      Linux 2.6 kernel events
-              psaux      raw device access (Linux 2.4)
-              psm        FreeBSD psm driver
-
-       Option "SHMConfig" "boolean"
-              Switch on/off shared memory for run-time debugging. This  option
-              does not have an effect on run-time configuration anymore and is
-              only useful for hardware event debugging.
-
-       Option "FastTaps" "boolean"
-              Makes the driver react faster to a single tap,  but  also  makes
-              double   clicks  caused  by  double  tapping  slower.  Property:
-              "Synaptics Tap FastTap"
-        ''')),
-        99: PropFormat(("dummy", '''
-       Option "EdgeMotionMinZ" "integer"
-              Finger  pressure  at  which  minimum  edge  motion speed is set.
-              Property: "Synaptics Edge Motion Pressure"
-
-       Option "EdgeMotionMaxZ" "integer"
-              Finger pressure at which  maximum  edge  motion  speed  is  set.
-              Property: "Synaptics Edge Motion Pressure"
-
-       Option "EdgeMotionMinSpeed" "integer"
-              Slowest setting for edge motion speed. Property: "Synaptics Edge
-              Motion Speed"
-
-       Option "EdgeMotionMaxSpeed" "integer"
-              Fastest setting for edge motion speed. Property: "Synaptics Edge
-              Motion Speed"
-        ''')),
-        98: PropFormat(("dummy", ''' {{{2
-       Option "EdgeMotionUseAlways" "boolean"
-              If  on,  edge motion is also used for normal movements.  If off,
-              edge motion is used only  when  dragging.  Property:  "Synaptics
-              Edge Motion Always"
-        ''')),
-        3: PropFormat(("dummy", ''' {{{2
-       Option "HorizHysteresis" "integer"
-              The  minimum  horizontal HW distance required to generate motion
-              events. Can be specified as  a  percentage.  Increase  if  noise
-              motion  is  a  problem  for you. Zero is disabled.  Default: 0.5
-              percent of the diagonal or (in case of  evdev)  the  appropriate
-              "fuzz" as advertised by the device.
-
-       Option "VertHysteresis" "integer"
-              The  minimum  vertical  HW  distance required to generate motion
-              events. See HorizHysteresis.
-
-       Option "UpDownScrolling" "boolean"
-              If on, the up/down buttons generate button 4/5 events.  If  off,
-              the  up  button  generates  a  double  click and the down button
-              generates a button 2 event. This option is  only  available  for
-              touchpads  with  physical  scroll buttons.  Property: "Synaptics
-              Button Scrolling"
-
-       Option "LeftRightScrolling" "boolean"
-              If on, the left/right buttons generate button  6/7  events.   If
-              off, the left/right buttons both generate button 2 events.  This
-              option is only available  for  touchpads  with  physical  scroll
-              buttons.  Property: "Synaptics Button Scrolling"
-
-       Option "UpDownScrollRepeat" "boolean"
-              If   on,   and  the  up/down  buttons  are  used  for  scrolling
-              (UpDownScrolling), these buttons will  send  auto-repeating  4/5
-              events,   with   the   delay   between   repeats  determined  by
-              ScrollButtonRepeat.  This option is only available for touchpads
-              with  physical  scroll  buttons.   Property:  "Synaptics  Button
-              Scrolling Repeat"
-
-       Option "LeftRightScrollRepeat" "boolean"
-              If on,  and  the  left/right  buttons  are  used  for  scrolling
-              (LeftRightScrolling), these buttons will send auto-repeating 6/7
-              events,  with  the   delay   between   repeats   determined   by
-              ScrollButtonRepeat.  This option is only available for touchpads
-              with  physical  scroll  buttons.   Property:  "Synaptics  Button
-              Scrolling Repeat"
-
-       Option "ScrollButtonRepeat" "integer"
-              The  number of milliseconds between repeats of button events 4-7
-              from the up/down/left/right scroll buttons.  This option is only
-              available for touchpads with physical scroll buttons.  Property:
-              "Synaptics Button Scrolling Time"
-
-       Option "EmulateMidButtonTime" "integer"
-              Maximum time (in  milliseconds)  for  middle  button  emulation.
-              Property: "Synaptics Middle Button Timeout"
-        ''')),
-        97: PropFormat(("VertResolution", "{:d}"),
-                       ("HorizResolution", "{:d}")),
-        96: PropFormat(("AreaLeftEdge", "{:d}"),
-                       ("AreaRightEdge", "{:d}"),
-                       ("AreaTopEdge", "{:d}"),
-                       ("AreaBottomEdge", "{:d}")),
-    }
-
-    xinputs = {}  # type: Dict[int, int] # {{{1
 
     @classmethod  # get_touchpad_id {{{1
     def get_touchpad_id(cls):
@@ -745,10 +629,10 @@ class NProp1804(NProp):  # {{{1
                 if not mo:
                     continue
                 _id = mo.group(1)
-                j = v.n = int(_id)
+                v.n = int(_id)
                 if verbose:
                     print("id:{:3} as {} - {}".format(_id, p, v.key))
-                cls.xinputs[j] = cls.count_props(line, verbose)
+                v.xinput = cls.count_props(line, verbose)
                 break
             else:
                 if verbose:
