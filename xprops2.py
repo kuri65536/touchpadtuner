@@ -10,10 +10,10 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 from __future__ import print_function
 import re
-import subprocess as sp
 from typing import Dict, Iterator, Optional, Text, Tuple
 # from logging import info
 
+import common
 from xprops import NProp, PropFormat
 
 
@@ -603,7 +603,7 @@ class NProp1804(NProp):  # {{{1
     def get_touchpad_id(cls):
         # type: () -> Text
         _id = ""
-        for line in sp.check_output("xinput").splitlines():
+        for line in common.check_output(["xinput"]).splitlines():
             if "Touchpad" not in line:
                 continue
             seq = line.split("\t")
@@ -621,7 +621,7 @@ class NProp1804(NProp):  # {{{1
         cmd = ["xinput", "list-props", _id]
         for p, v in cls.props():
             v.n = -1
-        for line in sp.check_output(cmd).splitlines():
+        for line in common.check_output(cmd).splitlines():
             for p, v in cls.props():
                 if v.key not in line:
                     continue

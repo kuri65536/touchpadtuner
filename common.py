@@ -9,6 +9,7 @@ v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 from __future__ import print_function
+import subprocess as sp
 import sys
 
 try:
@@ -235,6 +236,14 @@ def open_file(fname, mode):  # {{{2
         return codecs.open(fname, mode, enc)
     else:
         return open(fname, mode + "t", encoding=enc)
+
+
+def check_output(args):  # {{{1
+    # type: (List[Text]) -> Text
+    enc = opts.file_encoding
+    curb = sp.check_output(args)
+    curs = curb.decode(enc)
+    return curs  # type: ignore
 
 
 # main {{{1

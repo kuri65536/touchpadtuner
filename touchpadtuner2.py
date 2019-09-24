@@ -264,10 +264,10 @@ class XInputDB(object):  # {{{1
 
     propsdb = {}  # type: Dict[str, int]
     cmd_bin = u"/usr/bin/xinput"
-    cmd_shw = cmd_bin + u" list-props {} | grep '({}):'"
-    cmd_int = u"set-int-prop"
-    cmd_flt = u"set-float-prop"
-    cmd_atm = cmd_bin + u" set-atomt-prop {} {} {} {}"
+    cmd_shw = [cmd_bin, u"list-props"]
+    cmd_int = [cmd_bin, u"set-prop", u"--type=int"]
+    cmd_flt = [cmd_bin, u"set-prop", u"--type=float"]
+    cmd_atm = [cmd_bin, u"set-prop", u"--type=atom"]
 
     cmd_wat = "query-state"
 
@@ -307,11 +307,11 @@ class XInputDB(object):  # {{{1
     @classmethod
     def determine_devid(cls):  # cls {{{2
         # type: () -> int
-        cmd = cls.cmd_bin + u" list | grep -i TouchPad"
-        curb = subprocess.check_output(cmd, shell=True)
-        curs = curb.decode("utf-8").strip()
-        if curs == "":
+        seq = common.check_output([cls.cmd_bin, "list"]).splitlines()
+        seq = [s for s in seq if "touchpad" in s.lower()]
+        if len(seq) < 1:
             return True
+        curs = seq[0].strip()
         if "id=" not in curs:
             return True
         curs = curs[curs.find("id="):]
@@ -344,8 +344,7 @@ class XInputDB(object):  # {{{1
             propnames.append(name)
         n = 0
         cmd = [cls.cmd_bin, "list-props", str(cls.dev)]
-        curb = subprocess.check_output(cmd)
-        curs = curb.decode("utf-8").strip()
+        curs = common.check_output(cmd)
         for line in curs.splitlines():
             if "(" not in line:
                 continue
@@ -384,23 +383,26 @@ class XInputDB(object):  # {{{1
 
     def prop_get(self, key):  # {{{1
         # type: (int) -> List[Text]
-        cmd = self.cmd_shw.format(self.dev, key)
+        curs = common.check_output(self.cmd_shw + [Text(self.dev)])
+        for line in curs.splitlines():
+            if "({}):".format(key) in line:
+                curs = line
+                break
+        else:
+            return []
         assert key > 0
-        curb = subprocess.check_output(cmd, shell=True)
-        curs = curb.decode("utf-8").strip()
         seq = curs.split(":")[1].split(",")
         return [i.strip() for i in seq]
 
     def prop_set_int(self, key, typ, seq):  # {{{1
         # type: (int, Text, List[Text]) -> bool
-        cmd = [self.cmd_bin, self.cmd_int, Text(self.dev),
-               Text(key), typ] + seq
+        cmd = self.cmd_int + [
+                "--format=" + typ, Text(self.dev), Text(key)] + seq
         return self._callback(cmd)
 
     def prop_set_flt(self, key, seq):  # {{{1
         # type: (int, List[Text]) -> bool
-        cmd = [self.cmd_bin, self.cmd_flt, Text(self.dev),
-               Text(key)] + seq
+        cmd = self.cmd_flt + [Text(self.dev), Text(key)] + seq
         return self._callback(cmd)
 
     def clks(self, i):  # {{{2
@@ -595,8 +597,7 @@ class XInputDB(object):  # {{{1
     def props(self):  # {{{2
         # type: () -> Tuple[List[bool], List[int]]
         cmd = [self.cmd_bin, self.cmd_wat, str(self.dev)]
-        curb = subprocess.check_output(cmd)
-        curs = curb.decode("utf-8")
+        curs = common.check_output(cmd)
 
         _btns = {}  # type: Dict[int, bool]
         _vals = {}  # type: Dict[int, int]
@@ -630,6 +631,10 @@ class XInputDB(object):  # {{{1
         for prop in db.enum():
             if not f_changed:
                 pass
+            elif prop.prop.n < 1:
+                print("did not found: {}-{}".format(
+                        prop.prop.n, prop.prop.key))
+                continue
             elif not prop.is_changed():
                 continue
             info("syncing {}...".format(prop.prop.n))
@@ -866,15 +871,11 @@ class Gui(object):  # {{{1
         import platform
         from datetime import datetime
 
-        opts = common.opts
         fname = datetime.now().strftime("report-%Y%m%d-%H%M%S.txt")
-        enc = opts.file_encoding
         fp = open_file(fname, "a")
-        bs = subprocess.check_output("uname -a", shell=True)
-        msg = bs.decode(enc)
+        msg = common.check_output(["uname", "-a"])
         fp.write(msg + "\n")
-        bs = subprocess.check_output("python3 -m platform", shell=True)
-        msg = bs.decode(enc)
+        msg = common.check_output(["python3", "-m", "platform"])
         fp.write(msg + "\n")
         fp.write("Python: {}\n".format(str(sys.version_info)))
         if sys.version_info[0] == 2:
@@ -884,12 +885,9 @@ class Gui(object):  # {{{1
             sbld = platform.python_build()
             scmp = platform.python_compiler()
         fp.write("Python: {} {}\n".format(sbld, scmp))
-        bs = subprocess.check_output("xinput list", shell=True)
-        msg = bs.decode(enc)
+        msg = common.check_output(["xinput", "list"])
         fp.write(msg + u"\n")
-        bs = subprocess.check_output("xinput list-props {}".format(
-            xi.dev), shell=True)
-        msg = bs.decode(enc)
+        msg = common.check_output(["xinput", "list-props", Text(xi.dev)])
         fp.write(msg + u"\n")
         fp.write(u"\n\n--- current settings (in app)---\n")
         fp.write(xi.dumps())
