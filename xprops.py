@@ -126,7 +126,7 @@ class NProp(object):  # {{{1
 
         self.fmts = fmts
         self.key = key
-        self.hint = hint
+        self.hint = self.format_hint(hint)
         self.xinput = 1
 
     def is_valid(self):  # {{{1
@@ -289,9 +289,41 @@ class NProp(object):  # {{{1
     def prop_get(cls, n):
         # type: (int) -> Optional['NProp']
         for k, prop in cls.props():
-            if prop.idx == n:
+            if prop.n == n:
                 return prop
         return None
+
+    @classmethod  # prop_get_by_key {{{1
+    def prop_get_by_key(cls, src):
+        # type: (Text) -> Optional['NProp']
+        for k, prop in cls.props():
+            if prop.key in src:
+                return prop
+        return None
+
+    @classmethod  # format_hint {{{1
+    def format_hint(cls, src):
+        # type: (Text) -> Text
+        ret = src
+        seq = src.splitlines()
+        if len(seq) < 1:
+            return "\n"
+        l1 = seq[0].strip()
+        if len(l1) < 1:
+            return "\n" + ret
+        if len(seq) < 2:
+            return "\n" + l1
+        l2 = seq[1:]
+        n = 20
+        for l in l2:
+            i = len(l.lstrip())
+            if i < 1:
+                continue
+            i = len(l) - i
+            n = min((i, n))
+        n = n if n < 20 else 0
+        l1 = "\n" + (" " * n) + l1.lstrip()
+        return l1 + "\n" + "\n".join(l2)
 
 
 class NPropDb(Sized):  # {{{1

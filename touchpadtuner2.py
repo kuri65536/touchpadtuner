@@ -164,7 +164,7 @@ class NPropGuiFlt(NPropGui):   # {{{1
         bf = float(b)
         df = af - bf
         df = df if df >= 0 else -df
-        dgt = NProp.xconfs[self.prop.n].dgts[0]  # TODO: determine index.
+        dgt = self.prop.fmts.dgts[0]  # TODO: determine index.
         if df < 10 ** -dgt:
             return True
         return False
@@ -362,12 +362,8 @@ class XInputDB(object):  # {{{1
             if not line.isdigit():
                 print("createprops: can't parse: " + line + "\n")
                 continue
-            name = name.strip("( ").lower()
-            name = name.replace(" ", "_")
-            name = name.replace("-", "_")
-            if name.startswith("synaptics_"):
-                name = name[10:]
-            if name not in propnames:  # cls.propsdb:
+            prop = NProp.prop_get_by_key(name)
+            if prop is None:
                 print("createprops: can't parse: {} is not "
                       "the name of props".format(name))
                 continue
