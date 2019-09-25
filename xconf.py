@@ -288,11 +288,15 @@ class XConfFile(object):  # {{{1
                 fp.write(line)
                 continue
             propdb = db[prop.n]
-            propdb.wrote.append(prop.idx)
-            if prop.val == propdb.vals[prop.idx]:
+            idx = -1
+            for idx, val in enumerate(prop.vals):
+                propdb.wrote.append(idx)
+                if val != propdb.vals[idx]:
+                    break
+            else:
                 fp.write(line)  # write original, just mark to db.
                 continue
-            line = propdb.compose(prop.idx)
+            line = prop.compose(idx)
             fp.write(line)
         self.save_remains(fp, db)
         fp.write(buf[-1])

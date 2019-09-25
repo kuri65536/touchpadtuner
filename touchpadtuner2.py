@@ -299,7 +299,7 @@ class XInputDB(object):  # {{{1
         self._palmDims = NPropGuiInt(NProp.palm_dimensions, 32)  # 297
         self._cstspd = NPropGuiFlt(NProp.coasting_speed)  # 298
         self._prsmot = NPropGuiInt(NProp.pressure_motion, 32)  # 299 ???
-        self._prsfct = NPropGuiFlt(NProp.pressure_motion_factor)  # 300
+        self._prsfct = NPropGuiFlt(NProp.pressure_motion_factor)
         self._gestures = NPropGuiBol(NProp.gestures)  # 303
         self._softareas = NPropGuiInt(NProp.softareas, 32)  # 307
         self._noise = NPropGuiInt(NProp.noise_cancellation, 32)  # 308
@@ -645,9 +645,14 @@ class XInputDB(object):  # {{{1
     @classmethod  # apply_cmd # {{{1
     def apply_cmd(cls, cmd):
         # type: (List[Text]) -> bool
-        if not common.opts.fDryrun:
-            info("command invoked: " + Text(cmd))
-            subprocess.call(cmd)
+        if common.opts.fDryrun:
+            return False
+        info("command invoked: " + Text(cmd))
+        ret = subprocess.call(cmd)
+        if ret != 0:
+            print("ng: with: " + Text(cmd))
+        else:
+            print("ok: with: " + Text(cmd))
         return False
 
     def dump(self):  # {{{2
@@ -857,7 +862,8 @@ class Gui(object):  # {{{1
         db = xf.read(opts.fnameIn)
         for n, p in xi.dumpdb().items():
             prop = db[n]
-            prop.update(p)
+            for i, val in enumerate(p.vals):
+                prop.update(p, i)
         warn("output saved to {}".format(opts.fnameOut))
         xf.save(opts.fnameOut, opts.fnameIn, db)
 

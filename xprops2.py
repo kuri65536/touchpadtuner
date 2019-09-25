@@ -338,9 +338,11 @@ class NProp1804(NProp):  # {{{1
               applied.  Property: "Synaptics Pressure Motion"
         ''')
     pressure_motion_factor = NProp(
-        "Synaptics Pressure Motion Factor",  # = 300
-        PropFormat(("PressureMotionMinFactor", "{:d}"),
-                   ("PressureMotionMaxFactor", "{:d}")),
+        "Synaptics Pressure Motion Factor",  # = 300(int) -> 304(float)
+        PropFormat(("PressureMotionMinFactor", "{:f}"),
+                   ("PressureMotionMaxFactor", "{:f}")),
+        # PropFormat(("PressureMotionMinFactor", "{:d}"),
+        #            ("PressureMotionMaxFactor", "{:d}")),
         '''Option "PressureMotionMinFactor" "integer" {{{2
               Lowest  setting for pressure motion factor. Property: "Synaptics
               Pressure Motion Factor"

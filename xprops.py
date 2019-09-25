@@ -116,8 +116,6 @@ class NProp(object):  # {{{1
         fmts = fmts if fmts is not None else PropFormat(("dummy", ""))
 
         self.n = -1
-        self.idx = -1
-        self.val = None  # type: Any
         self.vals = [None] * len(fmts)   # type: List[Any]
         self.wrote = []  # type: List[int]
         self.n_section = -1
@@ -209,7 +207,6 @@ class NProp(object):  # {{{1
                 v = cls.parse_xconf(fmt, _src)
                 if v is None:
                     break
-                ret.val = v
                 ret.vals[n] = v
                 return ret
         return None
@@ -272,9 +269,9 @@ class NProp(object):  # {{{1
             ret.append(v)
         return ret
 
-    def update(self, prop):  # {{{1
-        # type: ('NProp') -> 'NProp'
-        self.vals[prop.idx] = prop.val
+    def update(self, prop, idx):  # {{{1
+        # type: ('NProp', int) -> 'NProp'
+        self.vals[idx] = prop.vals[idx]
         return self
 
     @classmethod  # props {{{1
@@ -360,9 +357,11 @@ class NPropDb(Sized):  # {{{1
             self.props.append(prop)
             return
         for i in self.props:
-            if i.n == n:
-                i.update(prop)
-                break
+            if i.n != n:
+                continue
+            for j, v in enumerate(prop.vals):
+                i.update(prop, j)
+            break
 
     def __len__(self):  # {{{1
         # type: () -> int
