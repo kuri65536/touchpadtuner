@@ -13,7 +13,7 @@ import sys
 import os
 import subprocess
 import logging
-from logging import debug as debg, info, warning as warn
+from logging import debug as debg, info, warning as warn, error as eror
 
 import common
 from common import (BoolVar, CmbVar, FltVar, IntVar,
@@ -359,12 +359,12 @@ class XInputDB(object):  # {{{1
             line = line[:n].strip("( )")
             # print("createdb: {}".format(line))
             if not line.isdigit():
-                print("createprops: can't parse: " + line + "\n")
+                warn("createpropsdb: can't parse: " + line + "\n")
                 continue
             prop = NProp.prop_get_by_key(name)
             if prop is None:
-                print("createprops: can't parse: {} is not "
-                      "the name of props".format(name))
+                warn("createpropsdb: can't parse: {} is not "
+                     "the name of props".format(name))
                 continue
             # print("{:20s}: {:3d}".format(name, int(line)))
             n += 1
@@ -632,7 +632,7 @@ class XInputDB(object):  # {{{1
             if not f_changed:
                 pass
             elif prop.prop.n < 1:
-                print("did not found: {}-{}".format(
+                eror("did not found: {}-{}".format(
                         prop.prop.n, prop.prop.key))
                 continue
             elif not prop.is_changed():
@@ -650,9 +650,9 @@ class XInputDB(object):  # {{{1
         info("command invoked: " + Text(cmd))
         ret = subprocess.call(cmd)
         if ret != 0:
-            print("ng: with: " + Text(cmd))
+            eror("ng: with: " + Text(cmd))
         else:
-            print("ok: with: " + Text(cmd))
+            warn("ok: with: " + Text(cmd))
         return False
 
     def dump(self):  # {{{2
@@ -732,7 +732,7 @@ def options():  # {{{1
         ret = XInputDB.determine_devid()
         if ret is True:
             return None
-        print("synaptics was detected as {} device".format(ret))
+        warn("synaptics was detected as {} device".format(ret))
         xi.dev = ret
     common.opts.fDryrun = opts.dry_run
     common.opts.file_encoding = opts.file_encoding
@@ -848,7 +848,7 @@ class Gui(object):  # {{{1
     def cmdrestore(self):  # {{{2
         # type: () -> None
         for cmd in cmdorg:
-            print("restore: " + str(cmd))
+            warn("restore: " + str(cmd))
             subprocess.call(cmd)
 
     def cmdapply(self):  # {{{2
@@ -1283,10 +1283,10 @@ def gui_canvas(inst, btns,  # {{{2
         areas = prms[1]
         gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2 = gui_softarea(areas[0:4])
         gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2 = gui_softarea(areas[4:8])
-        print("gui_canvas: RB: ({},{})-({},{})".format(
-              gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2))
-        print("gui_canvas: MB: ({},{})-({},{})".format(
-              gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2))
+        debg("gui_canvas: RB: ({},{})-({},{})".format(
+             gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2))
+        debg("gui_canvas: MB: ({},{})-({},{})".format(
+             gui.s2x1, gui.s2y1, gui.s2x2, gui.s2y2))
 
     if gui.s1x1 != gui.s1x2 and gui.s1y1 != gui.s1y2:
         draw.rectangle(inst, gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2,
@@ -1321,17 +1321,18 @@ gui = None  # type: Optional[Gui]
 # main {{{1
 def main():  # {{{1
     # type: () -> int
+    logging.basicConfig(format="%(levelname)-8s:%(asctime)s:%(message)s")
 
     NProp.auto_id()
     global gui
     debg("fetch settings, options and arguments...")
     opts = options()
     if opts is None:
-        print("can't found Synaptics in xinput.")
+        eror("can't found Synaptics in xinput.")
         return 1
     debg("create properties DB...")
     if XInputDB.createpropsdb():
-        print("can't found Synaptics properties in xinput.")
+        eror("can't found Synaptics properties in xinput.")
         return 2
     debg("build GUI...")
     gui = buildgui(opts)
