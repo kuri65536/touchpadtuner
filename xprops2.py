@@ -196,7 +196,7 @@ class NProp1804(NProp):  # {{{1
               2   Only tapping and scrolling is switched off
               Property: "Synaptics Off"
         ''')
-    locked_drags = NProp("Synaptics Locked Drags",  # = 288
+    locked_drags = NProp("Synaptics Locked Drags (",  # = 288 {{{1
                          PropFormat(("LockedDrags", "{:b}"), ),
                          '''Option "LockedDrags" "boolean" {{{2
               If off, a tap-and-drag gesture ends when you release the finger.
@@ -259,7 +259,7 @@ class NProp1804(NProp):  # {{{1
         Option "ClickFinger1" "integer"
         Option "ClickFinger2" "integer"
         Option "ClickFinger3" "integer" """)
-    cirscr = NProp("Synaptics Circular Scrolling",  # = 292
+    cirscr = NProp("Synaptics Circular Scrolling (",  # = 292 {{{1
                    PropFormat(("CircularScrolling", "{:b}"), ),
                    '''Option "CircularScrolling" "boolean" {{{2
               If on, circular scrolling is used. Property: "Synaptics Circular
@@ -326,7 +326,7 @@ class NProp1804(NProp):  # {{{1
               Number  of  scrolls/second²  to  decrease  the  coasting  speed.
               Default is 50.  Property: "Synaptics Coasting Speed"
         ''')
-    pressure_motion = NProp("Synaptics Pressure Motion",  # = 299
+    pressure_motion = NProp("Synaptics Pressure Motion (",  # = 299 {{{1
                             PropFormat(("PressureMotionMinZ", "{:d}"),
                                        ("PressureMotionMaxZ", "{:d}")),
                             '''Option "PressureMotionMinZ" "integer" {{{2
