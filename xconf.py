@@ -137,9 +137,9 @@ class XConfFile(object):  # {{{1
                 prop = NProp.parse(line)
                 if prop is None:
                     continue  # just ignore that line could not be parsed.
-                ret[prop.n] = prop
+                ret[prop.prop_id] = prop
                 # TODO: split a prop to different section...
-                ret[prop.n].n_section = sec
+                # ret[prop.prop_id].n_section = sec
         fp.close()
         return ret
 
@@ -260,8 +260,11 @@ class XConfFile(object):  # {{{1
         for n, prop in db.items():
             if not isinstance(prop, NProp):
                 continue
-            for idx, v in enumerate(prop.vals):
-                if v is None:
+            # TODO(shimoda): implement
+            if True:
+                """
+            for idx, fmt in enumerate(prop.format_with_value()):
+                if fmt.is_ is None:
                     continue  # not specified clearly
                 if idx in prop.wrote:
                     continue  # already output
@@ -270,11 +273,14 @@ class XConfFile(object):  # {{{1
                 # TODO(Shimoda): check v is default
                 # if is_default(v):
                 #    continue
+                """
                 if not fWrote:
                     fWrote = True
                     fp.write(" " * 8 + "# output by touchpadtuner\n")
+                """
                 line = prop.compose(idx)
                 fp.write(line)
+            """
         return False
 
     def parse_section(self, fp, db, buf):  # {{{1
@@ -284,13 +290,14 @@ class XConfFile(object):  # {{{1
             if prop is None:
                 fp.write(line)
                 continue
-            if prop.n not in db:
+            if prop.prop_id not in db:
                 fp.write(line)
                 continue
-            propdb = db[prop.n]
+            propdb = db[prop.prop_id]
             idx = -1
             for idx, val in enumerate(prop.vals):
-                propdb.wrote.append(idx)
+                # TODO(shimoda): sprit .conf and xinput functions
+                # propdb.wrote.append(idx)
                 if val != propdb.vals[idx]:
                     break
             else:

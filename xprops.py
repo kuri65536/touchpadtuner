@@ -115,21 +115,21 @@ class NProp(object):  # {{{1
         # type: (Text, Optional[PropFormat], Text) -> None
         fmts = fmts if fmts is not None else PropFormat(("dummy", ""))
 
-        self.n = -1
-        self.vals = [None] * len(fmts)   # type: List[Any]
-        self.wrote = []  # type: List[int]
-        self.n_section = -1
+        # number of xinput property-id
+        self.prop_id = -1
+        # loaded values from xinput
+        self.vals = [None] * self.prop_num(fmts)   # type: List[Any]
 
-        self.xins = [None]   # type: List[Any]
-
+        # formatter for .xconf output
         self.fmts = fmts
+        # keyword in xinput list-props
         self.key = key
+        # text for this property in man synaptic
         self.hint = self.format_hint(hint)
-        self.xinput = 1
 
     def is_valid(self):  # {{{1
         # type: () -> bool
-        return self.n != -1
+        return self.prop_id != -1
 
     @classmethod  # from_cmd {{{1
     def from_cmd(cls, cmd):
@@ -286,7 +286,7 @@ class NProp(object):  # {{{1
     def prop_get(cls, n):
         # type: (int) -> Optional['NProp']
         for k, prop in cls.props():
-            if prop.n == n:
+            if prop.prop_id == n:
                 return prop
         return None
 
@@ -322,6 +322,17 @@ class NProp(object):  # {{{1
         l1 = "\n" + (" " * n) + l1.lstrip()
         return l1 + "\n" + "\n".join(l2)
 
+    def prop_num(self, fmts):  # {{{1
+        # type: (Optional[PropFormat]) -> int
+        if fmts is None:
+            return 0
+        sum = 0
+        for title, args in fmts:
+            title
+            count = len(args) - len(args.replace("{", ""))
+            sum += count
+        return sum
+
 
 class NPropDb(Sized):  # {{{1
     def __init__(self):  # {{{1
@@ -336,14 +347,14 @@ class NPropDb(Sized):  # {{{1
         # type: (Any) -> bool
         assert isinstance(a, int)
         for i in self.props:
-            if i.n == a:
+            if i.prop_id == a:
                 return True
         return False
 
     def __getitem__(self, idx, *args, **kw):  # {{{1
         # type: (int, NProp, NProp) -> NProp
         for i in self.props:
-            if i.n == idx:
+            if i.prop_id == idx:
                 return i
         if len(args) > 0:
             return args[0]
@@ -353,11 +364,11 @@ class NPropDb(Sized):  # {{{1
 
     def __setitem__(self, n, prop):  # {{{1
         # type: (int, NProp) -> None
-        if prop.n not in self:
+        if prop.prop_id not in self:
             self.props.append(prop)
             return
         for i in self.props:
-            if i.n != n:
+            if i.prop_id != n:
                 continue
             for j, v in enumerate(prop.vals):
                 i.update(prop, j)
@@ -370,7 +381,7 @@ class NPropDb(Sized):  # {{{1
     def items(self):  # {{{1
         # type: () -> Iterable[Tuple[int, NProp]]
         for i in self.props:
-            yield (i.n, i)
+            yield (i.prop_id, i)
 
 
 # main {{{1

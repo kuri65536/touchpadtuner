@@ -56,9 +56,7 @@ def apply_none(cmd):  # {{{1
 class NPropGui(object):  # {{{1
     def __init__(self, prop):  # {{{1
         # type: (NProp1) -> None
-        length = prop.xinput
         self.prop = prop
-        self.length = length
         self.typ = "32"
         self.vars = []  # type: List[Any]
         self._cache = []  # type: List[Text]
@@ -69,8 +67,6 @@ class NPropGui(object):  # {{{1
 
     def is_changed(self):  # {{{1
         # type: () -> bool
-        if len(self.vars) < self.length:  # gui not loaded
-            return False
         if not self.is_loaded():
             self.load()
         cur = self.compose()
@@ -82,12 +78,16 @@ class NPropGui(object):  # {{{1
 
     def load(self):  # {{{1
         # type: () -> List[Text]
-        ret = self._cache = xi.prop_get(self.prop.n)
+        ret = self._cache = xi.prop_get(self.prop.prop_id)
         return ret
 
     def compose(self):  # {{{1
         # type: () -> List[Text]
-        assert False, "must be override"
+        ret = []
+        for var in self.vars:
+            n = var.get()
+            ret.append(Text(n))
+        return ret
 
     def cmp(self, a, b):  # {{{1
         # type: (Text, Text) -> bool
@@ -96,7 +96,7 @@ class NPropGui(object):  # {{{1
     def sync(self):  # {{{1
         # type: () -> bool
         args = self.compose()
-        xi.prop_set_int(self.prop.n, self.typ, args)
+        xi.prop_set_int(self.prop.prop_id, self.typ, args)
         return False
 
     def current(self, i):  # {{{1
@@ -125,14 +125,6 @@ class NPropGuiInt(NPropGui):  # {{{1
         self.vars.append(var)
         return self
 
-    def compose(self):  # {{{1
-        # type: () -> List[Text]
-        ret = []
-        for i in range(self.length):
-            n = self.vars[i].get()
-            ret.append(Text(n))
-        return ret
-
     def cmp(self, a, b):  # {{{1
         # type: (Text, Text) -> bool
         return a == b
@@ -150,14 +142,6 @@ class NPropGuiFlt(NPropGui):   # {{{1
         self.vars.append(var)
         return self
 
-    def compose(self):  # {{{1
-        # type: () -> List[Text]
-        ret = []
-        for i in range(self.length):
-            n = self.vars[i].get()
-            ret.append(Text(n))
-        return ret
-
     def cmp(self, a, b):  # {{{1
         # type: (Text, Text) -> bool
         af = float(a)
@@ -173,7 +157,7 @@ class NPropGuiFlt(NPropGui):   # {{{1
         # type: () -> bool
         args = self.compose()
         # TODO: 8 or 32
-        xi.prop_set_flt(self.prop.n, args)
+        xi.prop_set_flt(self.prop.prop_id, args)
         return False
 
 
@@ -193,8 +177,8 @@ class NPropGuiBol(NPropGui):   # {{{1
     def compose(self):  # {{{1
         # type: () -> List[Text]
         ret = []
-        for i in range(self.length):
-            n = self.vars[i].get()
+        for var in self.vars:
+            n = var.get()
             v = "1" if n else "0"
             ret.append(v)
         return ret
@@ -219,14 +203,6 @@ class NPropGuiCmb(NPropGui):   # {{{1
         self.vars.append(var)
         return self
 
-    def compose(self):  # {{{1
-        # type: () -> List[Text]
-        ret = []
-        for i in range(self.length):
-            n = self.vars[i].get()
-            ret.append(Text(n))
-        return ret
-
     def cmp(self, a, b):  # {{{1
         # type: (Text, Text) -> bool
         return a == b
@@ -239,12 +215,12 @@ class db(object):  # {{{1
     @classmethod  # regist {{{1
     def regist(cls, item):
         # type: (NPropGui) -> None
-        cls.db[item.prop.n] = item
+        cls.db[item.prop.prop_id] = item
 
     @classmethod  # get {{{1
     def get(cls, prop):
         # type: (NProp1) -> NPropGui
-        return cls.db[prop.n]
+        return cls.db[prop.prop_id]
 
     @classmethod  # enum {{{1
     def enum(cls):
@@ -303,6 +279,19 @@ class XInputDB(object):  # {{{1
         self._gestures = NPropGuiBol(NProp.gestures)  # 303
         self._softareas = NPropGuiInt(NProp.softareas, 32)  # 307
         self._noise = NPropGuiInt(NProp.noise_cancellation, 32)  # 308
+
+    def check_vars(self):  # {{{1
+        # type: () -> bool
+        f = False
+        for k, v in self.__dict__.items():
+            if not isinstance(v, NPropGui):
+                continue
+            info("{:3}-with {} args - {} gui {}".format(
+                v.prop.prop_id, len(v.prop.vals), len(v.vars), v.prop.key))
+            if len(v.vars) != len(v.prop.vals):
+                f = True
+        assert not f
+        return f
 
     @classmethod
     def determine_devid(cls):  # cls {{{2
@@ -631,13 +620,13 @@ class XInputDB(object):  # {{{1
         for prop in db.enum():
             if not f_changed:
                 pass
-            elif prop.prop.n < 1:
+            elif prop.prop.prop_id < 1:
                 eror("did not found: {}-{}".format(
-                        prop.prop.n, prop.prop.key))
+                        prop.prop.prop_id, prop.prop.key))
                 continue
             elif not prop.is_changed():
                 continue
-            info("syncing {}...".format(prop.prop.n))
+            info("syncing {}...".format(prop.prop.prop_id))
             prop.sync()
 
         return False
@@ -677,7 +666,7 @@ class XInputDB(object):  # {{{1
             prop = NProp.from_cmd(cmd)
             if prop is None:
                 return False
-            ret[prop.n] = prop
+            ret[prop.prop_id] = prop
             return False
 
         self.apply(apply, False)
@@ -792,7 +781,7 @@ class Gui(object):  # {{{1
         ret.pack(**kw)
         draw.bind(ret, "<Button-1>", self.hint)
         _id = Text(repr(ret))
-        self.hintnums[_id] = prop.n
+        self.hintnums[_id] = prop.prop_id
 
     def label3(self, parent, txt, prop, **kw):  # {{{2
         # type: (tk.Widget, str, NProp1, **Any) -> None
@@ -1226,6 +1215,7 @@ def buildgui(opts):  # {{{1
                 command=gui.cmdreport).pack()  # .pack(anchor=tk.N)
 
     # pad.config(height=4)
+    xi.check_vars()
     cmdorg = xi.dump()
     return gui
 

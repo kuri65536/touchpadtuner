@@ -9,6 +9,7 @@ v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 from __future__ import print_function
+from logging import info, warning as warn
 import re
 from typing import Dict, Iterator, Optional, Text, Tuple
 # from logging import info
@@ -615,7 +616,7 @@ class NProp1804(NProp):  # {{{1
         _id = cls.get_touchpad_id()
         cmd = ["xinput", "list-props", _id]
         for p, v in cls.props():
-            v.n = -1
+            v.prop_id = -1  # clear id
         for line in common.check_output(cmd).splitlines():
             for p, v in cls.props():
                 if v.key not in line:
@@ -624,17 +625,18 @@ class NProp1804(NProp):  # {{{1
                 if not mo:
                     continue
                 _id = mo.group(1)
-                v.n = int(_id)
-                if verbose:
-                    print("id:{:3} as {} - {}".format(_id, p, v.key))
-                v.xinput = cls.count_props(line, verbose)
+                v.prop_id = int(_id)
+                info("id:{:3} as {} - {}".format(_id, p, v.key))
+                num = cls.count_props(line, verbose)
+                if num != len(v.vals):
+                    warn("id:{:3}, {} - {}".format(_id, num, len(v.vals)))
                 break
             else:
                 if verbose:
                     print("???????:" + line)
         if verbose:
             for p, key in cls.props():
-                if key.n > 0:
+                if key.prop_id > 0:
                     print("{:3} was loaded as {}".format(getattr(cls, p), p))
                 else:
                     print("{} was not found...".format(p))
