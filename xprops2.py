@@ -37,7 +37,7 @@ class NProp1804(NProp):  # {{{1
         "Synaptics Edges",
         PropFormat(("Edges", "{:d} {:d} {:d} {:d}")),
         "X/Y coordinates for left, right, top, bottom edge.")
-    finger = NProp("Synaptics Finger",
+    finger = NProp("Synaptics Finger",  # {{{1
                    PropFormat(("FingerLow", "{:d}"),
                               ("FingerHigh", "{:d}"),
                               ("FingerPress", "{:d}")),
@@ -56,28 +56,21 @@ class NProp1804(NProp):  # {{{1
             Option "FingerHigh" "integer"
             Option "FingerPress" "integer"
         """)
-    tap_time = NProp("Synaptics Tap Time",  # = 276
-                     PropFormat(("MaxTapMove", "{:d}")),
-                     """Option "MaxTapMove" "integer" {{{2
-              Maximum movement of the finger for detecting  a  tap.  Property:
-              "Synaptics Tap Move"
-        """)
-    tap_move = NProp("Synaptics Tap Move",  # = 277
-                     PropFormat(("MaxTapTime", "{:d}"),  # same as tap_dur
-                                ("MaxDoubleTapTime", "{:d}"),
-                                ("ClickTime", "{:d}"),
-                                ("SingleTapTimeout", "{:d}")),
-                     "")
+    tap_time = NProp("Synaptics Tap Time",  # {{{1 = 276
+                     PropFormat(("MaxTapTime", "{:d}")),
+                     """Option "MaxTapTime" "integer"
+                        Maximum  time  (in  milliseconds) for detecting a tap.
+                        Property: "Synaptics Tap Durations" <- wrong? """)
+    tap_move = NProp("Synaptics Tap Move",  # {{{1 = 277
+                     PropFormat(("MaxTapMove", "{:d}")),  # same as tap_dur
+                     """Option "MaxTapMove" "integer"
+                                Maximum movement of the finger for detecting
+                                a tap. Property: "Synaptics Tap Move""")
     tap_durations = NProp("Synaptics Tap Durations",  # = 278
-                          PropFormat(("MaxTapTime", "{:d}"),
-                                     ("MaxDoubleTapTime", "{:d}"),
+                          PropFormat(("MaxDoubleTapTime", "{:d}"),
                                      ("ClickTime", "{:d}"),
                                      ("SingleTapTimeout", "{:d}")),
-                          """Option "MaxTapTime" "integer" {{{2
-              Maximum  time  (in  milliseconds) for detecting a tap. Property:
-              "Synaptics Tap Durations"
-
-       Option "MaxDoubleTapTime" "integer"
+                          """Option "MaxDoubleTapTime" "integer"
               Maximum  time  (in  milliseconds)  for  detecting  a double tap.
               Property: "Synaptics Tap Durations"
 
