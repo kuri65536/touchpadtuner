@@ -62,7 +62,16 @@ class PropFormat(Sized):  # {{{1
 
 class NProp(object):  # {{{1
     # {{{1
-    '''xinput list-props 11 {{{2
+    '''## class structure {{{2
+
+        ```class structure
+        xinput          -> NProp[NProp] -> xinput
+        xconf           -> NPropDb[NProp] -> xconf
+        GUI -> XInputDB[NPropGui] -> NProp
+        ```
+
+
+        ## xinput list-props and GUI pages {{{2
         Device 'ELAN1201:00 04F3:3054 Touchpad':
         Device Enabled (140):                     1
         Coordinate Transformation Matrix (142):   1.0, 0.0, 0.0,
@@ -187,6 +196,15 @@ class NProp(object):  # {{{1
                fmt + '"  # by touchpadtuner\n')
         val = self.vals[idx]
         return self.compose_format(fmt, val)
+
+    def compose_all(self):  # {{{1
+        # type: () -> Text
+        ret = ""
+        for n, val in enumerate(self.vals):
+            if val is None:
+                continue
+            ret += self.compose(n)
+        return ret
 
     @classmethod
     def parse(cls, src):  # cls {{{1
@@ -333,54 +351,66 @@ class NProp(object):  # {{{1
             sum += count
         return sum
 
+    def update_by_prop(self, inp):  # {{{1
+        # type: (NProp) -> None
+        assert self.prop_id == inp.prop_id
+        assert len(self.vals) > 0
+        for n, val in inp.vals:
+            if val is None:
+                continue  # skip no input.
+            self.vals[n] = val  # always override.
+
+    def same_prop(self, b):  # {{{1
+        # type: (NProp) -> bool
+        assert self.prop_id == b.prop_id
+        assert len(self.vals) > 0
+        for va, vb in zip(self.vals, b.vals):
+            if va is None:
+                continue
+            if vb is None:
+                return False
+            if va != vb:
+                return False
+        return True
+
 
 class NPropDb(Sized):  # {{{1
     def __init__(self):  # {{{1
         # type: () -> None
-        self.props = []  # type: List[NProp]
+        self.props = {"xinput": []}  # type: Dict[Text, List[NProp]]
 
-    def __iter__(self):  # {{{1
-        # type: () -> Iterable[NProp]
-        return self.props
-
-    def __contains__(self, a):  # {{{1
-        # type: (Any) -> bool
-        assert isinstance(a, int)
-        for i in self.props:
-            if i.prop_id == a:
-                return True
-        return False
-
-    def __getitem__(self, idx, *args, **kw):  # {{{1
-        # type: (int, NProp, NProp) -> NProp
-        for i in self.props:
-            if i.prop_id == idx:
-                return i
-        if len(args) > 0:
-            return args[0]
-        if "fallback" in kw:
-            return kw["fallback"]
+    def get(self, sec, prop, fallback=None):  # {{{1
+        # type: (Text, NProp, Optional[NProp]) -> NProp
+        if sec not in self.props:
+            pass
+        else:
+            seq = self.props[sec]
+            for i in seq:
+                if i.prop_id == prop.prop_id:
+                    return i
+        if fallback is not None:
+            return fallback
         raise KeyError("invalid key '{}'".format())
 
-    def __setitem__(self, n, prop):  # {{{1
-        # type: (int, NProp) -> None
-        if prop.prop_id not in self:
-            self.props.append(prop)
+    def put(self, sec, prop):  # {{{1
+        # type: (Text, NProp) -> None
+        try:
+            prop_cur = self.get(sec, prop)
+        except KeyError:
+            if sec not in self.props:
+                # TODO(shimoda): automatic section creations?
+                self.props[sec] = []
+            self.props[sec].append(prop)
             return
-        for i in self.props:
-            if i.prop_id != n:
-                continue
-            for j, v in enumerate(prop.vals):
-                i.update(prop, j)
-            break
+        prop_cur.update_by_prop(prop)
 
     def __len__(self):  # {{{1
         # type: () -> int
         return len(self.props)
 
-    def items(self):  # {{{1
-        # type: () -> Iterable[Tuple[int, NProp]]
-        for i in self.props:
+    def items(self, sec):  # {{{1
+        # type: (Text) -> Iterable[Tuple[int, NProp]]
+        for i in self.props[sec]:
             yield (i.prop_id, i)
 
 

@@ -137,9 +137,7 @@ class XConfFile(object):  # {{{1
                 prop = NProp.parse(line)
                 if prop is None:
                     continue  # just ignore that line could not be parsed.
-                ret[prop.prop_id] = prop
-                # TODO: split a prop to different section...
-                # ret[prop.prop_id].n_section = sec
+                ret.put(self.cur_section, prop)
         fp.close()
         return ret
 
@@ -254,10 +252,10 @@ class XConfFile(object):  # {{{1
                 return self.n_section
         return self.n_section
 
-    def save_remains(self, fp, db):  # {{{2
-        # type: (IO[Text], NPropDb) -> bool
+    def save_remains(self, fp, db, sec):  # {{{2
+        # type: (IO[Text], NPropDb, Text) -> bool
         fWrote = False
-        for n, prop in db.items():
+        for n, prop in db.items(sec):
             if not isinstance(prop, NProp):
                 continue
             # TODO(shimoda): implement
@@ -285,27 +283,22 @@ class XConfFile(object):  # {{{1
 
     def parse_section(self, fp, db, buf):  # {{{1
         # type: (IO[Text], NPropDb, List[Text]) -> bool
+        sec = self.cur_section
         for line in buf[:-1]:
             prop = NProp.parse(line)
             if prop is None:
                 fp.write(line)
                 continue
-            if prop.prop_id not in db:
+            try:
+                cur = db.get(sec, prop)
+                if prop.same_prop(cur):
+                    fp.write(line)
+                    continue
+                line = prop.compose_all()
                 fp.write(line)
-                continue
-            propdb = db[prop.prop_id]
-            idx = -1
-            for idx, val in enumerate(prop.vals):
-                # TODO(shimoda): sprit .conf and xinput functions
-                # propdb.wrote.append(idx)
-                if val != propdb.vals[idx]:
-                    break
-            else:
-                fp.write(line)  # write original, just mark to db.
-                continue
-            line = prop.compose(idx)
-            fp.write(line)
-        self.save_remains(fp, db)
+            except KeyError:
+                pass
+        self.save_remains(fp, db, sec)
         fp.write(buf[-1])
 
         """
