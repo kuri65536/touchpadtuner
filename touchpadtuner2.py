@@ -128,6 +128,14 @@ class NPropGuiInt(NPropGui):  # {{{1
         # type: (Text, Text) -> bool
         return a == b
 
+    def cache(self, idx):  # {{{1
+        # type: (int) -> int
+        assert idx < len(self.prop.vals)
+        val = self.prop.vals[idx]
+        assert val is not None
+        ret = int(val)
+        return ret
+
 
 class NPropGuiFlt(NPropGui):   # {{{1
     def __init__(self, prop):  # {{{1
@@ -203,6 +211,14 @@ class NPropGuiCmb(NPropGui):   # {{{1
         # type: (Text, Text) -> bool
         return a == b
 
+    def cache(self, idx):  # {{{1
+        # type: (int) -> int
+        assert idx < len(self.prop.vals)
+        val = self.prop.vals[idx]
+        assert val is not None
+        ret = int(val)
+        return ret
+
 
 class XInputDB(object):  # {{{1
     # {{{1
@@ -227,7 +243,7 @@ class XInputDB(object):  # {{{1
         NProp.auto_id()
         self._callback = apply_none  # type: Callable[[List[Text]], bool]
 
-        self._edges = NPropGuiInt(NProp.edges, 32)  # 274
+        self.edges = NPropGuiInt(NProp.edges, 32)  # 274
         self._finger = NPropGuiInt(NProp.finger, 32)  # 275
         self._taptime = NPropGuiInt(NProp.tap_time, 32)  # 276
         self._tapmove = NPropGuiInt(NProp.tap_move, 32)  # 277
@@ -240,8 +256,8 @@ class XInputDB(object):  # {{{1
         self._movespd = NPropGuiFlt(NProp.move_speed)  # 286
         self._lckdrags = NPropGuiBol(NProp.locked_drags)  # 288
         self._lckdragstimeout = NPropGuiInt(NProp.locked_drags_timeout, 32)
-        self._taps = NPropGuiCmb(NProp.tap_action, 8)  # 290
-        self._clks = NPropGuiCmb(NProp.click_action, 8)  # 291
+        self.taps = NPropGuiCmb(NProp.tap_action, 8)  # 290
+        self.clks = NPropGuiCmb(NProp.click_action, 8)  # 291
         self._cirscr = NPropGuiBol(NProp.cirscr)  # 292
         self._cirdis = NPropGuiFlt(NProp.cirdis)  # 293
         self._cirtrg = NPropGuiCmb(NProp.cirtrg, 8)  # 294
@@ -376,18 +392,6 @@ class XInputDB(object):  # {{{1
         cmd = self.cmd_flt + [Text(self.dev), Text(key)] + seq
         return self._callback(cmd)
 
-    def clks(self, i):  # {{{2
-        # type: (int) -> int
-        txt = self._clks.current(i)
-        ret = int(txt)
-        return ret
-
-    def taps(self, i):  # {{{2
-        # type: (int) -> int
-        txt = self._taps.current(i)
-        ret = int(txt)
-        return ret
-
     def tapdurs(self, i):  # {{{2
         # type: (int) -> int
         txt = self._tapdurs.current(i)
@@ -468,23 +472,6 @@ class XInputDB(object):  # {{{1
         txt = self._cirdis.current(0)
         ret = float(txt)
         return ret
-
-    def edges(self, i):  # {{{2
-        # type: (int) -> int
-        txt = self._edges.current(i)
-        ret = int(txt)
-        return ret
-
-        """
-        assert len(v) in (0, 4)
-        n = NProp.edges
-        prop = db.get(n)
-        if len(v) > 0:
-            pass
-        elif prop.is_changed():
-            pass
-        return self.prop_i32(n, i, v)
-        """
 
     def edgescrs(self, i):  # {{{2
         # type: (int) -> bool
@@ -919,7 +906,7 @@ def buildgui(opts):  # {{{1
     frm13 = draw.frame(frm1)
 
     # gui_canvas(gui.mouse, ["white"] * 7, [0] * 4,
-    #            [[xi.edges(i) for i in range(4)],
+    #            [[xi.dges(i) for i in range(4)],
     #             [xi.softareas(i) for i in range(8)]])
 
     draw.label(frm11, "Information (update to click labels, "
@@ -984,34 +971,34 @@ def buildgui(opts):  # {{{1
     frm = draw.frame(page1)
     frm.pack()
     draw.label(frm, "1-Finger").pack(side=tk.LEFT, padx=10)
-    xi._clks.append(gui.combobox(frm, seq, xi.clks(0)))
+    xi.clks.append(gui.combobox(frm, seq, xi.clks.cache(0)))
     draw.label(frm, "2-Finger").pack(side=tk.LEFT)
-    xi._clks.append(gui.combobox(frm, seq, xi.clks(1)))
+    xi.clks.append(gui.combobox(frm, seq, xi.clks.cache(1)))
     draw.label(frm, "3-Finger").pack(side=tk.LEFT)
-    xi._clks.append(gui.combobox(frm, seq, xi.clks(2)))
+    xi.clks.append(gui.combobox(frm, seq, xi.clks.cache(2)))
 
     # Tap Action
     gui.label2(page1, "Tap actions", NProp.tap_action)
     frm = draw.frame(page1)
     frm.pack(anchor=tk.W)
     draw.label(frm, "RT", width=10).pack(side=tk.LEFT, padx=10)
-    xi._taps.append(gui.combobox(frm, seq, xi.taps(0)))
+    xi.taps.append(gui.combobox(frm, seq, xi.taps.cache(0)))
     draw.label(frm, "RB").pack(side=tk.LEFT)
-    xi._taps.append(gui.combobox(frm, seq, xi.taps(1)))
+    xi.taps.append(gui.combobox(frm, seq, xi.taps.cache(1)))
     frm = draw.frame(page1)
     frm.pack(anchor=tk.W)
     draw.label(frm, "LT", width=10).pack(side=tk.LEFT, padx=10)
-    xi._taps.append(gui.combobox(frm, seq, xi.taps(2)))
+    xi.taps.append(gui.combobox(frm, seq, xi.taps.cache(2)))
     draw.label(frm, "LB").pack(side=tk.LEFT)
-    xi._taps.append(gui.combobox(frm, seq, xi.taps(3)))
+    xi.taps.append(gui.combobox(frm, seq, xi.taps.cache(3)))
     frm = draw.frame(page1)
     frm.pack(anchor=tk.W)
     draw.label(frm, "1-Finger", width=10).pack(side=tk.LEFT, padx=10)
-    xi._taps.append(gui.combobox(frm, seq, xi.taps(4)))
+    xi.taps.append(gui.combobox(frm, seq, xi.taps.cache(4)))
     draw.label(frm, "2-Finger").pack(side=tk.LEFT)
-    xi._taps.append(gui.combobox(frm, seq, xi.taps(5)))
+    xi.taps.append(gui.combobox(frm, seq, xi.taps.cache(5)))
     draw.label(frm, "3-Finger").pack(side=tk.LEFT)
-    xi._taps.append(gui.combobox(frm, seq, xi.taps(6)))
+    xi.taps.append(gui.combobox(frm, seq, xi.taps.cache(6)))
 
     # Tap Threshold
     w = 10
@@ -1056,11 +1043,11 @@ def buildgui(opts):  # {{{1
 
     frm = draw.frame(page4)
     gui.label3(frm, "Edge-x", NProp.edges)
-    xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(0)))
-    xi._edges.append(gui.slider(frm, 0, 3100, xi.edges(1)))
+    xi.edges.append(gui.slider(frm, 0, 3100, xi.edges.cache(0)))
+    xi.edges.append(gui.slider(frm, 0, 3100, xi.edges.cache(1)))
     draw.label(frm, "Edge-y").pack(side=tk.LEFT)
-    xi._edges.append(gui.slider(frm, 0, 1800, xi.edges(2)))
-    xi._edges.append(gui.slider(frm, 0, 1800, xi.edges(3)))
+    xi.edges.append(gui.slider(frm, 0, 1800, xi.edges.cache(2)))
+    xi.edges.append(gui.slider(frm, 0, 1800, xi.edges.cache(3)))
     frm.pack(anchor=tk.W)
 
     gui.label2(page4, "Soft Button Areas "
@@ -1251,8 +1238,8 @@ def gui_canvas(inst, btns,  # {{{2
     draw.rectangle(inst, 0, 0, _100, _100, fill='white')  # ,stipple='gray25')
     if len(prms) > 0:
         edges = prms[0]
-        gui.ex1, gui.ey1 = gui_scale(edges[0], edges[2])
-        gui.ex2, gui.ey2 = gui_scale(edges[1], edges[3])
+        gui.ex1, gui.ey1 = gui_scale(edges.cache(0), edges.cache(2))
+        gui.ex2, gui.ey2 = gui_scale(edges.cache(1), edges.cache(3))
         # print("gui_canvas: edge: ({},{})-({},{})".format(x1, y1, x2, y2))
         areas = prms[1]
         gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2 = gui_softarea(areas[0:4])
