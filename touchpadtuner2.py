@@ -118,7 +118,6 @@ class NPropGuiInt(NPropGui):  # {{{1
         NPropGui.__init__(self, prop)
         self.vars = []  # type: List[IntVar]
         self.typ = Text(typ)
-        db.regist(self)
 
     def append(self, var):  # {{{1
         # type: (IntVar) -> 'NPropGuiInt'
@@ -135,7 +134,6 @@ class NPropGuiFlt(NPropGui):   # {{{1
         # type: (NProp1) -> None
         NPropGui.__init__(self, prop)
         self.vars = []  # type: List[FltVar]
-        db.regist(self)
 
     def append(self, var):  # {{{1
         # type: (FltVar) -> 'NPropGuiFlt'
@@ -167,7 +165,6 @@ class NPropGuiBol(NPropGui):   # {{{1
         NPropGui.__init__(self, prop)
         self.typ = "8"
         self.vars = []  # type: List[BoolVar]
-        db.regist(self)
 
     def append(self, var):  # {{{1
         # type: (BoolVar) -> 'NPropGuiBol'
@@ -196,7 +193,6 @@ class NPropGuiCmb(NPropGui):   # {{{1
         NPropGui.__init__(self, prop)
         self.typ = Text(typ)
         self.vars = []  # type: List[CmbVar]
-        db.regist(self)
 
     def append(self, var):  # {{{1
         # type: (CmbVar) -> 'NPropGuiCmb'
@@ -206,27 +202,6 @@ class NPropGuiCmb(NPropGui):   # {{{1
     def cmp(self, a, b):  # {{{1
         # type: (Text, Text) -> bool
         return a == b
-
-
-class db(object):  # {{{1
-    # {{{1
-    db = {}  # type: Dict[int, NPropGui]
-
-    @classmethod  # regist {{{1
-    def regist(cls, item):
-        # type: (NPropGui) -> None
-        cls.db[item.prop.prop_id] = item
-
-    @classmethod  # get {{{1
-    def get(cls, prop):
-        # type: (NProp1) -> NPropGui
-        return cls.db[prop.prop_id]
-
-    @classmethod  # enum {{{1
-    def enum(cls):
-        # type: () -> Iterable[NPropGui]
-        for i in cls.db.values():
-            yield i
 
 
 class XInputDB(object):  # {{{1
@@ -370,6 +345,13 @@ class XInputDB(object):  # {{{1
             ret = ret[1:]
         return ret
 
+    def prop_enum(self):  # {{{1
+        # type: () -> Iterable[NPropGui]
+        for k, v in self.__dict__.items():
+            if not isinstance(v, NPropGui):
+                continue
+            yield v
+
     def prop_get(self, key):  # {{{1
         # type: (int) -> List[Text]
         curs = common.check_output(self.cmd_shw + [Text(self.dev)])
@@ -396,31 +378,31 @@ class XInputDB(object):  # {{{1
 
     def clks(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.click_action).current(i)
+        txt = self._clks.current(i)
         ret = int(txt)
         return ret
 
     def taps(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.tap_action).current(i)
+        txt = self._taps.current(i)
         ret = int(txt)
         return ret
 
     def tapdurs(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.tap_durations).current(i)
+        txt = self._tapdurs.current(i)
         ret = int(txt)
         return ret
 
     def taptime(self):  # {{{2
         # type: () -> int
-        txt = db.get(NProp.tap_time).current(0)
+        txt = self._taptime.current(0)
         ret = int(txt)
         return ret
 
     def tapmove(self):  # {{{2
         # type: () -> int
-        txt = db.get(NProp.tap_move).current(0)
+        txt = self._tapmove.current(0)
         ret = int(txt)
         return ret
 
@@ -431,37 +413,37 @@ class XInputDB(object):  # {{{1
             low = int(seq[0])
             hig = int(seq[1])
             return low < hig
-        txt = db.get(NProp.finger).current(i)
+        txt = self._finger.current(i)
         ret = int(txt)
         return ret
 
     def twofingerscroll(self, i):  # {{{2
         # type: (int) -> bool
-        txt = db.get(NProp.two_finger_scrolling).current(i)
+        txt = self._twofingerscroll.current(i)
         ret = bool(txt)
         return ret
 
     def movespd(self, i):  # {{{2
         # type: (int) -> float
-        txt = db.get(NProp.move_speed).current(i)
+        txt = self._movespd.current(i)
         ret = float(txt)
         return ret
 
     def lckdrags(self):  # {{{2
         # type: () -> bool
-        txt = db.get(NProp.locked_drags).current(0)
+        txt = self._lckdrags.current(0)
         ret = bool(txt)
         return ret
 
     def lckdragstimeout(self):  # {{{2
         # type: () -> int
-        txt = db.get(NProp.locked_drags_timeout).current(0)
+        txt = self._lckdragstimeout.current(0)
         ret = int(float(txt))
         return ret
 
     def cirscr(self):  # {{{2
         # type: () -> bool
-        txt = db.get(NProp.cirscr).current(0)
+        txt = self._cirscr.current(0)
         ret = bool(txt)
         return ret
 
@@ -471,25 +453,25 @@ class XInputDB(object):  # {{{1
             # type: (List[Text]) -> bool
             cur = int(seq[0])
             return 0 <= cur <= 8
-        txt = db.get(NProp.cirtrg).current(0)
+        txt = self._cirtrg.current(0)
         ret = int(float(txt))
         return ret
 
     def cirpad(self):  # {{{2
         # type: () -> bool
-        txt = db.get(NProp.cirpad).current(0)
+        txt = self._cirpad.current(0)
         ret = bool(txt)
         return ret
 
     def cirdis(self):  # {{{2
         # type: () -> float
-        txt = db.get(NProp.cirdis).current(0)
+        txt = self._cirdis.current(0)
         ret = float(txt)
         return ret
 
     def edges(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.edges).current(i)
+        txt = self._edges.current(i)
         ret = int(txt)
         return ret
 
@@ -506,19 +488,19 @@ class XInputDB(object):  # {{{1
 
     def edgescrs(self, i):  # {{{2
         # type: (int) -> bool
-        txt = db.get(NProp.edgescrs).current(i)
+        txt = self._edgescrs.current(i)
         ret = bool(txt)
         return ret
 
     def cstspd(self, i):  # {{{2
         # type: (int) -> float
-        txt = db.get(NProp.coasting_speed).current(i)
+        txt = self._cstspd.current(i)
         ret = float(txt)
         return ret
 
     def prsmot(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.pressure_motion).current(i)
+        txt = self._prsmot.current(i)
         try:
             n = float(txt)
             ret = int(n)
@@ -531,55 +513,55 @@ class XInputDB(object):  # {{{1
         prop = NProp.pressure_motion_factor
         if not prop.is_valid():
             return 0.0
-        txt = db.get(NProp.pressure_motion_factor).current(i)
+        txt = self._prsfct.current(i)
         ret = float(txt)
         return ret
 
     def palmDetect(self):  # {{{2
         # type: () -> bool
-        txt = db.get(NProp.palm_detection).current(0)
+        txt = self._palmDetect.current(0)
         ret = bool(txt)
         return ret
 
     def palmDims(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.palm_dimensions).current(i)
+        txt = self._palmDims.current(i)
         ret = int(txt)
         return ret
 
     def softareas(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.softareas).current(i)
+        txt = self._softareas.current(i)
         ret = int(txt)
         return ret
 
     def twoprs(self):  # {{{2
         # type: () -> int
-        txt = db.get(NProp.two_finger_pressure).current(0)
+        txt = self._twoprs.current(0)
         ret = int(txt)
         return ret
 
     def twowid(self):  # {{{2
         # type: () -> int
-        txt = db.get(NProp.two_finger_width).current(0)
+        txt = self._twowid.current(0)
         ret = int(txt)
         return ret
 
     def scrdist(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.scrdist).current(i)
+        txt = self._scrdist.current(i)
         ret = int(txt)
         return ret
 
     def gestures(self):  # {{{2
         # type: () -> bool
-        txt = db.get(NProp.gestures).current(0)
+        txt = self._gestures.current(0)
         ret = bool(txt)
         return ret
 
     def noise(self, i):  # {{{2
         # type: (int) -> int
-        txt = db.get(NProp.noise_cancellation).current(i)
+        txt = self._noise.current(i)
         ret = int(txt)
         return ret
 
@@ -617,7 +599,7 @@ class XInputDB(object):  # {{{1
         info("-------- start apply() function -------------------------------")
         self._callback = fn
 
-        for prop in db.enum():
+        for prop in self.prop_enum():
             if not f_changed:
                 pass
             elif prop.prop.prop_id < 1:
@@ -666,7 +648,7 @@ class XInputDB(object):  # {{{1
             prop = NProp.from_cmd(cmd)
             if prop is None:
                 return False
-            ret[prop.prop_id] = prop
+            ret.put("xinput", prop)
             return False
 
         self.apply(apply, False)
@@ -849,10 +831,12 @@ class Gui(object):  # {{{1
         opts = common.opts
         xf = XConfFile()
         db = xf.read(opts.fnameIn)
-        for n, p in xi.dumpdb().items():
-            prop = db[n]
-            for i, val in enumerate(p.vals):
-                prop.update(p, i)
+        for n, p in xi.dumpdb().items("xinput"):
+            try:
+                prop = db.get("xinput", p)
+                prop.update_by_prop(p)
+            except KeyError:
+                db.put("input", p)
         warn("output saved to {}".format(opts.fnameOut))
         xf.save(opts.fnameOut, opts.fnameIn, db)
 
