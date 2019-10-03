@@ -199,6 +199,14 @@ class NPropGuiBol(NPropGui):   # {{{1
         bf = b.lower() in ("1", "true")
         return af == bf
 
+    def cache(self, idx):  # {{{1
+        # type: (int) -> bool
+        assert idx < len(self.prop.vals)
+        val = self.prop.vals[idx]
+        assert val is not None
+        ret = bool(val)
+        return ret
+
 
 class NPropGuiCmb(NPropGui):   # {{{1
     def __init__(self, prop, typ):  # {{{1
@@ -256,23 +264,23 @@ class XInputDB(object):  # {{{1
         self.twoprs = NPropGuiInt(NProp.two_finger_pressure, 32)  # 281
         self.twowid = NPropGuiInt(NProp.two_finger_width, 32)  # 282
         self.scrdist = NPropGuiInt(NProp.scrdist, 32)  # 283
-        self._edgescrs = NPropGuiBol(NProp.edgescrs)  # 284
-        self._twofingerscroll = NPropGuiBol(NProp.two_finger_scrolling)
+        self.edgescrs = NPropGuiBol(NProp.edgescrs)  # 284
+        self.twoscr = NPropGuiBol(NProp.two_finger_scrolling)
         self._movespd = NPropGuiFlt(NProp.move_speed)  # 286
-        self._lckdrags = NPropGuiBol(NProp.locked_drags)  # 288
+        self.lckdrags = NPropGuiBol(NProp.locked_drags)  # 288
         self.lckdrgto = NPropGuiInt(NProp.locked_drags_timeout, 32)
         self.taps = NPropGuiCmb(NProp.tap_action, 8)  # 290
         self.clks = NPropGuiCmb(NProp.click_action, 8)  # 291
-        self._cirscr = NPropGuiBol(NProp.cirscr)  # 292
+        self.cirscr = NPropGuiBol(NProp.cirscr)  # 292
         self._cirdis = NPropGuiFlt(NProp.cirdis)  # 293
         self._cirtrg = NPropGuiCmb(NProp.cirtrg, 8)  # 294
-        self._cirpad = NPropGuiBol(NProp.cirpad)  # 295
-        self._palmDetect = NPropGuiBol(NProp.palm_detection)  # 296
+        self.cirpad = NPropGuiBol(NProp.cirpad)  # 295
+        self.palmdet = NPropGuiBol(NProp.palm_detection)  # 296
         self.palmdim = NPropGuiInt(NProp.palm_dimensions, 32)  # 297
         self._cstspd = NPropGuiFlt(NProp.coasting_speed)  # 298
         self.prsmot = NPropGuiInt(NProp.pressure_motion, 32)  # 299 ???
         self._prsfct = NPropGuiFlt(NProp.pressure_motion_factor)
-        self._gestures = NPropGuiBol(NProp.gestures)  # 303
+        self.gestures = NPropGuiBol(NProp.gestures)  # 303
         self.softareas = NPropGuiInt(NProp.softareas, 32)  # 307
         self.noise = NPropGuiInt(NProp.noise_cancellation, 32)  # 308
 
@@ -405,28 +413,10 @@ class XInputDB(object):  # {{{1
         cmd = self.cmd_flt + [Text(self.dev), Text(key)] + seq
         return self._callback(cmd)
 
-    def twofingerscroll(self, i):  # {{{2
-        # type: (int) -> bool
-        txt = self._twofingerscroll.current(i)
-        ret = bool(txt)
-        return ret
-
     def movespd(self, i):  # {{{2
         # type: (int) -> float
         txt = self._movespd.current(i)
         ret = float(txt)
-        return ret
-
-    def lckdrags(self):  # {{{2
-        # type: () -> bool
-        txt = self._lckdrags.current(0)
-        ret = bool(txt)
-        return ret
-
-    def cirscr(self):  # {{{2
-        # type: () -> bool
-        txt = self._cirscr.current(0)
-        ret = bool(txt)
         return ret
 
     def cirtrg(self):  # {{{2
@@ -439,22 +429,10 @@ class XInputDB(object):  # {{{1
         ret = int(float(txt))
         return ret
 
-    def cirpad(self):  # {{{2
-        # type: () -> bool
-        txt = self._cirpad.current(0)
-        ret = bool(txt)
-        return ret
-
     def cirdis(self):  # {{{2
         # type: () -> float
         txt = self._cirdis.current(0)
         ret = float(txt)
-        return ret
-
-    def edgescrs(self, i):  # {{{2
-        # type: (int) -> bool
-        txt = self._edgescrs.current(i)
-        ret = bool(txt)
         return ret
 
     def cstspd(self, i):  # {{{2
@@ -470,18 +448,6 @@ class XInputDB(object):  # {{{1
             return 0.0
         txt = self._prsfct.current(i)
         ret = float(txt)
-        return ret
-
-    def palmDetect(self):  # {{{2
-        # type: () -> bool
-        txt = self._palmDetect.current(0)
-        ret = bool(txt)
-        return ret
-
-    def gestures(self):  # {{{2
-        # type: () -> bool
-        txt = self._gestures.current(0)
-        ret = bool(txt)
         return ret
 
     def props(self):  # {{{2
@@ -967,7 +933,7 @@ def buildgui(opts):  # {{{1
     # page4 - Area {{{2
     frm = draw.frame(page4)
     gui.label3(frm, "Palm detect", NProp.palm_detection)
-    xi._palmDetect.append(gui.checkbox(frm, "on", xi.palmDetect()))
+    xi.palmdet.append(gui.checkbox(frm, "on", xi.palmdet.cache(0)))
     gui.label3(frm, "Palm dimensions", NProp.palm_dimensions)
     xi.palmdim.append(gui.slider(frm, 0, 3100, xi.palmdim.cache(0)))
     xi.palmdim.append(gui.slider(frm, 0, 3100, xi.palmdim.cache(1)))
@@ -1008,18 +974,17 @@ def buildgui(opts):  # {{{1
 
     frm = draw.frame(page4)
     gui.label3(frm, "Edge scroll", NProp.edgescrs)
-    xi._edgescrs.append(gui.checkbox(frm, "Vert", xi.edgescrs(0)))
-    xi._edgescrs.append(gui.checkbox(frm, "Horz", xi.edgescrs(1)))
-    xi._edgescrs.append(gui.checkbox(frm, "Corner Coasting", xi.edgescrs(2)))
+    xi.edgescrs.append(gui.checkbox(frm, "Vert", xi.edgescrs.cache(0)))
+    xi.edgescrs.append(gui.checkbox(frm, "Horz", xi.edgescrs.cache(1)))
+    xi.edgescrs.append(gui.checkbox(frm, "Corner Coasting",
+                                    xi.edgescrs.cache(2)))
     frm.pack(anchor=tk.W)
 
     # page2 - two-fingers {{{2
     frm = draw.frame(page2)
     gui.label3(frm, "Two-Finger Scrolling", NProp.two_finger_scrolling)
-    xi._twofingerscroll.append(
-            gui.checkbox(frm, "Vert", xi.twofingerscroll(0)))
-    xi._twofingerscroll.append(
-            gui.checkbox(frm, "Horz", xi.twofingerscroll(1)))
+    xi.twoscr.append(gui.checkbox(frm, "Vert", xi.twoscr.cache(0)))
+    xi.twoscr.append(gui.checkbox(frm, "Horz", xi.twoscr.cache(1)))
     frm.pack(anchor=tk.W)
 
     frm = draw.frame(page2)
@@ -1064,15 +1029,15 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
     gui.label3(frm, "Locked Drags", NProp.locked_drags, width=w)
-    xi._lckdrags.append(gui.checkbox(frm, "on", xi.lckdrags()))
+    xi.lckdrags.append(gui.checkbox(frm, "on", xi.lckdrags.cache(0)))
     draw.label(frm, "timeout").pack(side=tk.LEFT)
     xi.lckdrgto.append(gui.slider(frm, 1, 100000, xi.lckdrgto.cache(0)))
-    xi._gestures.append(gui.checkbox(frm, "gesture", xi.gestures()))
+    xi.gestures.append(gui.checkbox(frm, "gesture", xi.gestures.cache(0)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
     gui.label3(frm, "Circular scrolling", NProp.cirscr, width=w)
-    xi._cirscr.append(gui.checkbox(frm, "on", xi.cirscr()))
-    xi._cirpad.append(gui.checkbox(frm, "Circular-pad", xi.cirpad()))
+    xi.cirscr.append(gui.checkbox(frm, "on", xi.cirscr.cache(0)))
+    xi.cirpad.append(gui.checkbox(frm, "Circular-pad", xi.cirpad.cache(0)))
     gui.label3(frm, "  Distance", NProp.cirdis)
     xi._cirdis.append(gui.slider_flt(frm, 0.01, 100, xi.cirdis()))
     gui.label3(frm, "  Trigger", NProp.cirtrg)
