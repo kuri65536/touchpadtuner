@@ -100,18 +100,6 @@ class NPropGui(object):  # {{{1
         xi.prop_set_int(self.prop.prop_id, self.typ, args)
         return False
 
-    def current(self, i):  # {{{1
-        # type: (int) -> Text
-        if i < len(self.vars):
-            var = self.vars[i]
-            ret = var.get()
-            txt = Text(ret)
-            return txt
-        if not self.is_loaded():
-            self.load()
-        txt = self._cache[i]
-        return txt
-
     def limit_noop(self, seq):  # {{{1
         # type: (List[Text]) -> bool
         return True
@@ -283,7 +271,7 @@ class XInputDB(object):  # {{{1
         self.clks = NPropGuiCmb(NProp.click_action, 8)  # 291
         self.cirscr = NPropGuiBol(NProp.cirscr)  # 292
         self.cirdis = NPropGuiFlt(NProp.cirdis)  # 293
-        self._cirtrg = NPropGuiCmb(NProp.cirtrg, 8)  # 294
+        self.cirtrg = NPropGuiCmb(NProp.cirtrg, 8)  # 294
         self.cirpad = NPropGuiBol(NProp.cirpad)  # 295
         self.palmdet = NPropGuiBol(NProp.palm_detection)  # 296
         self.palmdim = NPropGuiInt(NProp.palm_dimensions, 32)  # 297
@@ -301,6 +289,13 @@ class XInputDB(object):  # {{{1
             return low < hig
 
         self.finger.limit = limit
+
+        def limit8(seq):
+            # type: (List[Text]) -> bool
+            cur = int(seq[0])
+            return 0 <= cur <= 8
+
+        self.cirtrg.limit = limit
 
     def check_vars(self):  # {{{1
         # type: () -> bool
@@ -422,16 +417,6 @@ class XInputDB(object):  # {{{1
         # type: (int, List[Text]) -> bool
         cmd = self.cmd_flt + [Text(self.dev), Text(key)] + seq
         return self._callback(cmd)
-
-    def cirtrg(self):  # {{{2
-        # type: () -> int
-        def limit(seq):  # TODO: impl.
-            # type: (List[Text]) -> bool
-            cur = int(seq[0])
-            return 0 <= cur <= 8
-        txt = self._cirtrg.current(0)
-        ret = int(float(txt))
-        return ret
 
     def props(self):  # {{{2
         # type: () -> Tuple[List[bool], List[int]]
@@ -1024,15 +1009,12 @@ def buildgui(opts):  # {{{1
     gui.label3(frm, "  Distance", NProp.cirdis)
     xi.cirdis.append(gui.slider_flt(frm, 0.01, 100, xi.cirdis.cache(0)))
     gui.label3(frm, "  Trigger", NProp.cirtrg)
-    xi._cirtrg.append(gui.combobox(frm, ["0: All Edges",
-                                         "1: Top Edge",
-                                         "2: Top Right Corner",
-                                         "3: Right Edge",
-                                         "4: Bottom Right Corner",
-                                         "5: Bottom Edge",
-                                         "6: Bottom Left Corner",
-                                         "7: Left Edge",
-                                         "8: Top Left Corner"], xi.cirtrg()))
+    xi.cirtrg.append(gui.combobox(
+        frm, ["0: All Edges", "1: Top Edge", "2: Top Right Corner",
+              "3: Right Edge",
+              "4: Bottom Right Corner", "5: Bottom Edge",
+              "6: Bottom Left Corner",
+              "7: Left Edge", "8: Top Left Corner"], xi.cirtrg.cache(0)))
     frm.pack(anchor=tk.W)
 
     # page6 - Information {{{2
