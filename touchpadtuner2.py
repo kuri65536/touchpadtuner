@@ -171,6 +171,16 @@ class NPropGuiFlt(NPropGui):   # {{{1
         xi.prop_set_flt(self.prop.prop_id, args)
         return False
 
+    def cache(self, idx):  # {{{1
+        # type: (int) -> float
+        if not self.prop.is_valid():
+            return 0.0
+        assert idx < len(self.prop.vals)
+        val = self.prop.vals[idx]
+        assert val is not None
+        ret = float(val)
+        return ret
+
 
 class NPropGuiBol(NPropGui):   # {{{1
     def __init__(self, prop):  # {{{1
@@ -266,20 +276,20 @@ class XInputDB(object):  # {{{1
         self.scrdist = NPropGuiInt(NProp.scrdist, 32)  # 283
         self.edgescrs = NPropGuiBol(NProp.edgescrs)  # 284
         self.twoscr = NPropGuiBol(NProp.two_finger_scrolling)
-        self._movespd = NPropGuiFlt(NProp.move_speed)  # 286
+        self.movespd = NPropGuiFlt(NProp.move_speed)  # 286
         self.lckdrags = NPropGuiBol(NProp.locked_drags)  # 288
         self.lckdrgto = NPropGuiInt(NProp.locked_drags_timeout, 32)
         self.taps = NPropGuiCmb(NProp.tap_action, 8)  # 290
         self.clks = NPropGuiCmb(NProp.click_action, 8)  # 291
         self.cirscr = NPropGuiBol(NProp.cirscr)  # 292
-        self._cirdis = NPropGuiFlt(NProp.cirdis)  # 293
+        self.cirdis = NPropGuiFlt(NProp.cirdis)  # 293
         self._cirtrg = NPropGuiCmb(NProp.cirtrg, 8)  # 294
         self.cirpad = NPropGuiBol(NProp.cirpad)  # 295
         self.palmdet = NPropGuiBol(NProp.palm_detection)  # 296
         self.palmdim = NPropGuiInt(NProp.palm_dimensions, 32)  # 297
-        self._cstspd = NPropGuiFlt(NProp.coasting_speed)  # 298
+        self.cstspd = NPropGuiFlt(NProp.coasting_speed)  # 298
         self.prsmot = NPropGuiInt(NProp.pressure_motion, 32)  # 299 ???
-        self._prsfct = NPropGuiFlt(NProp.pressure_motion_factor)
+        self.prsfct = NPropGuiFlt(NProp.pressure_motion_factor)
         self.gestures = NPropGuiBol(NProp.gestures)  # 303
         self.softareas = NPropGuiInt(NProp.softareas, 32)  # 307
         self.noise = NPropGuiInt(NProp.noise_cancellation, 32)  # 308
@@ -413,12 +423,6 @@ class XInputDB(object):  # {{{1
         cmd = self.cmd_flt + [Text(self.dev), Text(key)] + seq
         return self._callback(cmd)
 
-    def movespd(self, i):  # {{{2
-        # type: (int) -> float
-        txt = self._movespd.current(i)
-        ret = float(txt)
-        return ret
-
     def cirtrg(self):  # {{{2
         # type: () -> int
         def limit(seq):  # TODO: impl.
@@ -427,27 +431,6 @@ class XInputDB(object):  # {{{1
             return 0 <= cur <= 8
         txt = self._cirtrg.current(0)
         ret = int(float(txt))
-        return ret
-
-    def cirdis(self):  # {{{2
-        # type: () -> float
-        txt = self._cirdis.current(0)
-        ret = float(txt)
-        return ret
-
-    def cstspd(self, i):  # {{{2
-        # type: (int) -> float
-        txt = self._cstspd.current(i)
-        ret = float(txt)
-        return ret
-
-    def prsfct(self, i):  # {{{2
-        # type: (int) -> float
-        prop = NProp.pressure_motion_factor
-        if not prop.is_valid():
-            return 0.0
-        txt = self._prsfct.current(i)
-        ret = float(txt)
         return ret
 
     def props(self):  # {{{2
@@ -1009,23 +992,23 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
     gui.label3(frm, "Move speed", NProp.move_speed, width=w)
-    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(0)))
-    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(1)))
-    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(2)))
-    xi._movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd(3)))
+    xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(0)))
+    xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(1)))
+    xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(2)))
+    xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(3)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
     gui.label3(frm, "Pressure Motion", NProp.pressure_motion, width=w)
     xi.prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot.cache(0)))
     xi.prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot.cache(1)))
     draw.label(frm, "Factor").pack(side=tk.LEFT)
-    xi._prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct(0)))
-    xi._prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct(1)))
+    xi.prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct.cache(0)))
+    xi.prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct.cache(1)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
     gui.label3(frm, "Coasting speed", NProp.coasting_speed, width=w)
-    xi._cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd(0)))
-    xi._cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd(1)))
+    xi.cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd.cache(0)))
+    xi.cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd.cache(1)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
     gui.label3(frm, "Locked Drags", NProp.locked_drags, width=w)
@@ -1039,7 +1022,7 @@ def buildgui(opts):  # {{{1
     xi.cirscr.append(gui.checkbox(frm, "on", xi.cirscr.cache(0)))
     xi.cirpad.append(gui.checkbox(frm, "Circular-pad", xi.cirpad.cache(0)))
     gui.label3(frm, "  Distance", NProp.cirdis)
-    xi._cirdis.append(gui.slider_flt(frm, 0.01, 100, xi.cirdis()))
+    xi.cirdis.append(gui.slider_flt(frm, 0.01, 100, xi.cirdis.cache(0)))
     gui.label3(frm, "  Trigger", NProp.cirtrg)
     xi._cirtrg.append(gui.combobox(frm, ["0: All Edges",
                                          "1: Top Edge",
