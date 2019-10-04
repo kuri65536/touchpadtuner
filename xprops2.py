@@ -392,8 +392,12 @@ class NProp1804(NProp):  # {{{1
                                  "{:d} {:d} {:d} {:d} {:d} {:d} {:d}"), ),
                          "")
     pad_resolution = NProp("Synaptics Pad Resolution",
-                           PropFormat(("ResolutionDetect", "{:b}"), ),
-                           "")  # = 305
+                           # PropFormat(("ResolutionDetect", "{:d} {:d"}), ),
+                           None,  # read-only
+                           """Synaptics Pad Resolution
+                              32 bit unsigned, 2 values (read-only),
+                              vertical, horizontal in units/millimeter.
+                           """)  # = 305
     area = NProp("Synaptics Area",
                  PropFormat(("AreaLeftEdge", "{:d}"),
                             ("AreaRightEdge", "{:d}"),
@@ -627,7 +631,7 @@ class NProp1804(NProp):  # {{{1
                 _id = mo.group(1)
                 v.prop_id = int(_id)
                 info("id:{:3} as {} - {}".format(_id, p, v.key))
-                num = cls.count_props(line, verbose)
+                num = NProp1804.parse_props(v, line, verbose)
                 if num != len(v.vals):
                     warn("id:{:3}, {} - {}".format(_id, num, len(v.vals)))
                 break
@@ -642,13 +646,19 @@ class NProp1804(NProp):  # {{{1
                     print("{} was not found...".format(p))
         return 0
 
-    @classmethod  # count_props {{{1
-    def count_props(cls, src, verbose=False):
-        # type: (Text, bool) -> int
+    @classmethod
+    def parse_props(cls, self, src, verbose=False):  # {{{1
+        # type: (NProp, Text, bool) -> int
+        if len(self.fmts) < 1:
+            return 0
         r = ":".join(src.split(":")[1:])
         r = r.replace("\t", " ")
         seq = r.split(",")
         # print(seq)
+        if len(seq) != len(self.vals):
+            import pdb; pdb.set_trace()
+        for n, i in enumerate(seq):
+            self.vals[n] = i
         return len(seq)
 
 

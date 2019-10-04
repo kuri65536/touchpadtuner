@@ -122,14 +122,14 @@ class NProp(object):  # {{{1
 
     def __init__(self, key, fmts, hint):  # {{{1
         # type: (Text, Optional[PropFormat], Text) -> None
-        fmts = fmts if fmts is not None else PropFormat(("dummy", ""))
 
         # number of xinput property-id
         self.prop_id = -1
         # loaded values from xinput
-        self.vals = [None] * self.prop_num(fmts)   # type: List[Any]
+        self.vals = [""] * self.prop_num(fmts)   # type: List[Text]
 
         # formatter for .xconf output
+        fmts = fmts if fmts is not None else PropFormat(("dummy", ""))
         self.fmts = fmts
         # keyword in xinput list-props
         self.key = key
@@ -201,7 +201,7 @@ class NProp(object):  # {{{1
         # type: () -> Text
         ret = ""
         for n, val in enumerate(self.vals):
-            if val is None:
+            if len(val) < 1:
                 continue
             ret += self.compose(n)
         return ret
@@ -355,8 +355,8 @@ class NProp(object):  # {{{1
         # type: (NProp) -> None
         assert self.prop_id == inp.prop_id
         assert len(self.vals) > 0
-        for n, val in inp.vals:
-            if val is None:
+        for n, val in enumerate(inp.vals):
+            if len(val) < 1:
                 continue  # skip no input.
             self.vals[n] = val  # always override.
 
