@@ -60,12 +60,19 @@ class NPropGui(object):  # {{{1
         self.prop = prop
         self.typ = "32"
         self.vars = []  # type: List[GuiVar]
+        self.sets = [""] * len(prop.vals)  # type: List[Text]
         self.limit = self.limit_noop
 
     def is_changed(self):  # {{{1
         # type: () -> bool
+        mem = self.prop.vals + []  # copy
+        for n, v in enumerate(self.sets):
+            if len(v) < 1:
+                continue
+            mem[n] = v
+
         cur = self.compose()
-        for a, b in zip(cur, self.prop.vals):
+        for a, b in zip(cur, mem):
             if not self.cmp(a, b):
                 return True
         return False
@@ -86,7 +93,20 @@ class NPropGui(object):  # {{{1
         # type: () -> bool
         args = self.compose()
         xi.prop_set_int(self.prop.prop_id, self.typ, args)
+        self.update_sets(args)
         return False
+
+    def update_sets(self, args):  # {{{1
+        # type: (List[Text]) -> None
+        for n, (a, b, c) in enumerate(zip(self.prop.vals, self.sets, args)):
+            if len(b) < 1:
+                if a != c:
+                    self.sets[n] = c
+            else:
+                # if a == c:
+                #     self.sets[n] = ""
+                if b != c:
+                    self.sets[n] = c
 
     def limit_noop(self, seq):  # {{{1
         # type: (List[Text]) -> bool
@@ -142,8 +162,8 @@ class NPropGuiFlt(NPropGui):   # {{{1
     def sync(self):  # {{{1
         # type: () -> bool
         args = self.compose()
-        # TODO: 8 or 32
         xi.prop_set_flt(self.prop.prop_id, args)
+        self.update_sets(args)
         return False
 
     def cache(self, idx):  # {{{1
@@ -1088,7 +1108,7 @@ def main():  # {{{1
         eror("can't found Synaptics in xinput.")
         return 1
     debg("create properties DB...")
-    if n_props < 2:
+    if n_props < 3:
         eror("can't found Synaptics properties in xinput.")
         return 2
     debg("build GUI...")
