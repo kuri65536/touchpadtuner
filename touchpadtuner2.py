@@ -323,55 +323,6 @@ class XInputDB(object):  # {{{1
             cls.propsdb[name] = v
         return False
 
-    @classmethod
-    def createpropsdb(cls):  # cls {{{2
-        # type: () -> bool
-        if False:
-            cls.createpropsdb_defaults()
-        propnames = []
-        for name in dir(NProp):
-            if name.startswith("_"):
-                continue
-            propnames.append(name)
-        n = 0
-        cmd = [cls.cmd_bin, "list-props", str(cls.dev)]
-        curs = common.check_output(cmd)
-        for line in curs.splitlines():
-            if "(" not in line:
-                continue
-            line = line.strip()
-            # print("createdb: {}".format(line))
-            n = line.index("(")
-            name = line[:n]  # type: ignore  ## TODO: fix for python2
-            line = line[n:]
-            if ")" not in line:
-                continue
-            n = line.index(")")
-            line = line[:n].strip("( )")
-            # print("createdb: {}".format(line))
-            if not line.isdigit():
-                warn("createpropsdb: can't parse: " + line + "\n")
-                continue
-            prop = NProp.prop_get_by_key(name)
-            if prop is None:
-                warn("createpropsdb: can't parse: {} is not "
-                     "the name of props".format(name))
-                continue
-            # print("{:20s}: {:3d}".format(name, int(line)))
-            n += 1
-            cls.propsdb[name] = int(line)
-        return n < 1
-
-    @classmethod
-    def textprops(cls):  # cls {{{2
-        # type: () -> str
-        ret = ""
-        for name in cls.propsdb:
-            ret += "\n{:20s} = {:3d}".format(name, cls.propsdb[name])
-        if len(ret) > 0:
-            ret = ret[1:]
-        return ret
-
     def propgui_enum(self):  # {{{1
         # type: () -> Iterable[NPropGui]
         for k, v in self.__dict__.items():
@@ -1013,7 +964,7 @@ def buildgui(opts):  # {{{1
     frm = draw.frame(page6)
     draw.label(frm, "XInput2 Keywords", width=20).pack(side=tk.LEFT)
     txt = draw.text(frm, 3)
-    draw.text_insert(txt, tk.END, XInputDB.textprops())
+    draw.text_insert(txt, tk.END, NProp2.textprops())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
     frm = draw.frame(page6)
@@ -1129,7 +1080,7 @@ def main():  # {{{1
     # type: () -> int
     logging.basicConfig(format="%(levelname)-8s:%(asctime)s:%(message)s")
 
-    NProp2.auto_id()
+    n_props = NProp2.auto_id()
     global gui
     debg("fetch settings, options and arguments...")
     opts = options()
@@ -1137,7 +1088,7 @@ def main():  # {{{1
         eror("can't found Synaptics in xinput.")
         return 1
     debg("create properties DB...")
-    if XInputDB.createpropsdb():
+    if n_props < 2:
         eror("can't found Synaptics properties in xinput.")
         return 2
     debg("build GUI...")

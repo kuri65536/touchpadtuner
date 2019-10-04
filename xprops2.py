@@ -621,6 +621,7 @@ class NProp1804(NProp):  # {{{1
         cmd = ["xinput", "list-props", _id]
         for p, v in cls.props():
             v.prop_id = -1  # clear id
+        ret = 0
         for line in common.check_output(cmd).splitlines():
             for p, v in cls.props():
                 if v.key not in line:
@@ -634,6 +635,7 @@ class NProp1804(NProp):  # {{{1
                 num = NProp1804.parse_props(v, line, verbose)
                 if num != len(v.vals):
                     warn("id:{:3}, {} - {}".format(_id, num, len(v.vals)))
+                ret += 1
                 break
             else:
                 if verbose:
@@ -644,7 +646,7 @@ class NProp1804(NProp):  # {{{1
                     print("{:3} was loaded as {}".format(getattr(cls, p), p))
                 else:
                     print("{} was not found...".format(p))
-        return 0
+        return ret
 
     @classmethod
     def parse_props(cls, self, src, verbose=False):  # {{{1
@@ -661,6 +663,19 @@ class NProp1804(NProp):  # {{{1
         for n, i in enumerate(seq):
             self.vals[n] = i.strip()
         return len(seq)
+
+    @classmethod
+    def textprops(cls):  # cls {{{2
+        # type: () -> Text
+        ret = ""
+        for k, v in cls.__dict__.items():
+            if not isinstance(v, NProp):
+                continue
+            name = v.key.replace(" (", "")
+            ret += "\n{:20s} = {:3d}".format(name, v.prop_id)
+        if len(ret) > 0:
+            ret = ret[1:]
+        return ret
 
 
 # main {{{1
