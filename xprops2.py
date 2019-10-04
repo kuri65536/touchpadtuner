@@ -24,17 +24,17 @@ Dict, Iterator, Optional, Text, Tuple
 class NProp1804(NProp):  # {{{1
     # {{{1
     # name and numbers {{{1
-    device_enabled = NProp("Device Enabled", None, "")  # (140):
-    coordinate_transformation_matrix = NProp(
+    device_enabled = NProp("Device Enabled", None, "")  # {{{1 (140):
+    coordinate_transformation_matrix = NProp(  # {{{1
       "Coordinate Transformation Matrix", None, "")  # = 142
-    device_accel_profile = NProp("Device Accel Profile", None, "")  # = 270
-    device_accel_constant_deceleration = NProp(
+    device_accel_profile = NProp("Device Accel Profile", None, "")  # {{{1 =270
+    device_accel_constant_deceleration = NProp(  # {{{1
       "Device Accel Constant Deceleration", None, "")  # = 271
-    device_accel_adaptive_deceleration = NProp(
+    device_accel_adaptive_deceleration = NProp(  # {{{1
       "Device Accel Adaptive Deceleration", None, "")  # = 272
-    device_accel_velocity_scalin = NProp(
+    device_accel_velocity_scalin = NProp(  # {{{1
       "Device Accel Velocity Scaling", None, "")  # = 273
-    edges = NProp(
+    edges = NProp(  # {{{1
         "Synaptics Edges",
         PropFormat(("Edges", "{:d} {:d} {:d} {:d}")),
         "X/Y coordinates for left, right, top, bottom edge.")
@@ -42,7 +42,7 @@ class NProp1804(NProp):  # {{{1
                    PropFormat(("FingerLow", "{:d}"),
                               ("FingerHigh", "{:d}"),
                               ("FingerPress", "{:d}")),
-                   """Property: "Synaptics Finger" {{{2
+                   """Property: "Synaptics Finger"
             FingerLow: When finger pressure drops below this value,
             the driver counts it as a release.
 
@@ -67,7 +67,7 @@ class NProp1804(NProp):  # {{{1
                      """Option "MaxTapMove" "integer"
                                 Maximum movement of the finger for detecting
                                 a tap. Property: "Synaptics Tap Move""")
-    tap_durations = NProp("Synaptics Tap Durations",  # = 278
+    tap_durations = NProp("Synaptics Tap Durations",  # {{{1 = 278
                           PropFormat(("MaxDoubleTapTime", "{:d}"),
                                      ("ClickTime", "{:d}"),
                                      ("SingleTapTimeout", "{:d}")),
@@ -83,23 +83,23 @@ class NProp1804(NProp):  # {{{1
               Timeout  after  a tap to recognize it as a single tap. Property:
               "Synaptics Tap Durations"
         """)
-    clickpad = NProp("Synaptics ClickPad",  # = 279
+    clickpad = NProp("Synaptics ClickPad",  # {{{1 = 279
                      PropFormat(("ClickPad", "{:d}")),
-                     """Option "ClickPad" "boolean" {{{2
+                     """Option "ClickPad" "boolean"
               Whether  the  device  is  a  click  pad.  A click pad device has
               button(s) integrated into the touchpad surface.  The  user  must
               press  downward  on  the touchpad in order to generated a button
               press. This property may be set automatically  if  a  click  pad
               device  is detected at initialization time. Property: "Synaptics
               ClickPad""")
-    middle_button_timeout = NProp(
+    middle_button_timeout = NProp(  # {{{1 = 280
             "Synaptics Middle Button Timeout",
             PropFormat(("# MiddleButtonTimeout", "{:d}")),
             "")  # = 280
-    two_finger_pressure = NProp(
+    two_finger_pressure = NProp(  # {{{1 = 281
             "Synaptics Two-Finger Pressure",  # = 281
             PropFormat(("EmulateTwoFingerMinZ", "{:d}")),
-            '''Option "EmulateTwoFingerMinZ" "integer" {{{2
+            '''Option "EmulateTwoFingerMinZ" "integer"
               For  touchpads not capable of detecting multiple fingers but are
               capable of detecting finger pressure and width, this sets the  Z
               pressure threshold.  When both Z pressure and W width thresholds
@@ -109,7 +109,7 @@ class NProp1804(NProp):  # {{{1
               on  remaining touchpads that support pressure and width support.
               Property: "Synaptics Two-Finger Pressure"j
             ''')
-    two_finger_width = NProp("Synaptics Two-Finger Width",  # = 282 {{{2
+    two_finger_width = NProp("Synaptics Two-Finger Width",  # = 282 {{{1
                              PropFormat(("EmulateTwoFingerMinW", "{:d}"),),
                              '''Option "EmulateTwoFingerMinW" "integer"
               For touchpads not capable of detecting multiple fingers but  are
@@ -119,10 +119,10 @@ class NProp1804(NProp):  # {{{1
               works best with  (PalmDetect)  off.  Property:  "Synaptics  Two-
               Finger Width"
         ''')
-    scrdist = NProp("Synaptics Scrolling Distance",  # = 283
+    scrdist = NProp("Synaptics Scrolling Distance",  # {{{1 = 283
                     PropFormat(("VertScrollDelta", "{:d}"),
                                ("HorizScrollDelta", "{:d}")),
-                    '''Option "VertScrollDelta" "integer" {{{2
+                    '''Option "VertScrollDelta" "integer"
               Move  distance  of  the  finger  for  a  scroll event. Property:
               "Synaptics Scrolling Distance"
 
@@ -130,11 +130,11 @@ class NProp1804(NProp):  # {{{1
               Move distance of  the  finger  for  a  scroll  event.  Property:
               "Synaptics Scrolling Distance"
         ''')
-    edgescrs = NProp("Synaptics Edge Scrolling",  # = 284
+    edgescrs = NProp("Synaptics Edge Scrolling",  # {{{1 = 284
                      PropFormat(("VertEdgeScroll", "{:b}"),
                                 ("HorizEdgeScroll", "{:b}"),
                                 ("CornerCoasting", " {:b}")),
-                     '''Option "VertEdgeScroll" "boolean" {{{2
+                     '''Option "VertEdgeScroll" "boolean"
               Enable vertical scrolling when dragging along  the  right  edge.
               Property: "Synaptics Edge Scrolling"
 
@@ -146,12 +146,12 @@ class NProp1804(NProp):  # {{{1
               Enable edge scrolling to continue while the finger stays  in  an
               edge corner.  Property: "Synaptics Edge Scrolling"
         ''')
-    two_finger_scrolling = NProp("Synaptics Two-Finger Scrolling",  # = 285
+    two_finger_scrolling = NProp("Synaptics Two-Finger Scrolling",  # {{{1 =285
                                  PropFormat(
                                     ("VertTwoFingerScroll", "{:b}"),
                                     ("HorizTwoFingerScroll", "{:b}")),
                                  '''
-       Option "VertTwoFingerScroll" "boolean" {{{2
+       Option "VertTwoFingerScroll" "boolean"
               Enable   vertical  scrolling  when  dragging  with  two  fingers
               anywhere  on  the  touchpad.  Property:  "Synaptics   Two-Finger
               Scrolling"
@@ -161,12 +161,12 @@ class NProp1804(NProp):  # {{{1
               anywhere  on  the  touchpad.  Property:  "Synaptics   Two-Finger
               Scrolling"
         ''')
-    move_speed = NProp("Synaptics Move Speed",  # = 286
+    move_speed = NProp("Synaptics Move Speed",  # {{{1 = 286
                        PropFormat(("MinSpeed", "{:f}", "3"),
                                   ("MaxSpeed", "{:f}", "3"),
                                   ("AccelFactor", "{:f}", "3"),
                                   ("TrackstickSpeed", "{:f}", "3")),
-                       '''Option "MinSpeed" "float" {{{2
+                       '''Option "MinSpeed" "float"
               Minimum speed factor. Property: "Synaptics Move Speed"
 
        Option "MaxSpeed" "float"
@@ -180,9 +180,9 @@ class NProp1804(NProp):  # {{{1
               Speed  scale  when  in  trackstick  emulation  mode.   Property:
               "Synaptics Move Speed"
         ''')
-    off = NProp("Synaptics Off",  # = 287
+    off = NProp("Synaptics Off",  # {{{1 = 287
                 PropFormat(("TouchpadOff", "{:d}"), ),
-                '''Option "TouchpadOff" "integer" {{{2
+                '''Option "TouchpadOff" "integer"
               Switch off the touchpad.  Valid values are:
 
               0   Touchpad is enabled
@@ -190,25 +190,25 @@ class NProp1804(NProp):  # {{{1
               2   Only tapping and scrolling is switched off
               Property: "Synaptics Off"
         ''')
-    locked_drags = NProp("Synaptics Locked Drags (",  # = 288 {{{1
+    locked_drags = NProp("Synaptics Locked Drags (",  # {{{1 = 288 {{{1
                          PropFormat(("LockedDrags", "{:b}"), ),
-                         '''Option "LockedDrags" "boolean" {{{2
+                         '''Option "LockedDrags" "boolean"
               If off, a tap-and-drag gesture ends when you release the finger.
               If on, the gesture is active until you tap  a  second  time,  or
               until  LockedDragTimeout  expires.  Property:  "Synaptics Locked
               Drags"
         ''')
-    locked_drags_timeout = NProp("Synaptics Locked Drags Timeout",  # = 289
+    locked_drags_timeout = NProp("Synaptics Locked Drags Timeout",  # {{{1 =289
                                  PropFormat(
                                     ("LockedDragTimeout", "{:d}"),),
                                  '''
-        Option "LockedDragTimeout" "integer" {{{2
+        Option "LockedDragTimeout" "integer"
               This parameter specifies how long it takes (in milliseconds) for
               the  LockedDrags  mode  to be automatically turned off after the
               finger is  released  from  the  touchpad.  Property:  "Synaptics
               Locked Drags Timeout"
         ''')
-    tap_action = NProp("Synaptics Tap Action",  # = 290
+    tap_action = NProp("Synaptics Tap Action",  # {{{1 = 290
                        PropFormat(("RTCornerButton", "{:d}"),
                                   ("RBCornerButton", "{:d}"),
                                   ("LTCornerButton", "{:d}"),
@@ -216,7 +216,7 @@ class NProp1804(NProp):  # {{{1
                                   ("TapButton1", "{:d}"),
                                   ("TapButton2", "{:d}"),
                                   ("TapButton3", "{:d}")),
-                       """Property: "Synaptics Tap Action" {{{2
+                       """Property: "Synaptics Tap Action"
 
             RT: Which mouse button is reported on a right top
             corner tap. Set 0 to disable.
@@ -242,32 +242,32 @@ class NProp1804(NProp):  # {{{1
             Option "TapButton2" "integer"
             Option "TapButton3" "integer"
         """)
-    click_action = NProp("Synaptics Click Action",  # = 291
+    click_action = NProp("Synaptics Click Action",  # {{{1 = 291
                          PropFormat(("ClickFinger1", "{:d}"),
                                     ("ClickFinger2", "{:d}"),
                                     ("ClickFinger3", "{:d}")),
-                         """Property: "Synaptics Click Action" {{{2
+                         """Property: "Synaptics Click Action"
         Which mouse button  is  reported  when left-clicking with one,
         two or three fingers. Set to 0 to disable.
 
         Option "ClickFinger1" "integer"
         Option "ClickFinger2" "integer"
         Option "ClickFinger3" "integer" """)
-    cirscr = NProp("Synaptics Circular Scrolling (",  # = 292 {{{1
+    cirscr = NProp("Synaptics Circular Scrolling (",  # {{{1 = 292 {{{1
                    PropFormat(("CircularScrolling", "{:b}"), ),
-                   '''Option "CircularScrolling" "boolean" {{{2
+                   '''Option "CircularScrolling" "boolean"
               If on, circular scrolling is used. Property: "Synaptics Circular
               Scrolling"
         ''')
-    cirdis = NProp("Synaptics Circular Scrolling Distance",  # = 293
+    cirdis = NProp("Synaptics Circular Scrolling Distance",  # {{{1 = 293
                    PropFormat(("CircScrollDelta", "{:f}", "3"), ),
-                   '''Option "CircScrollDelta" "float" {{{2
+                   '''Option "CircScrollDelta" "float"
               Move angle (radians) of  finger  to  generate  a  scroll  event.
               Property: "Synaptics Circular Scrolling Distance"
         ''')
-    cirtrg = NProp("Synaptics Circular Scrolling Trigger",  # = 294
+    cirtrg = NProp("Synaptics Circular Scrolling Trigger",  # {{{1 = 294
                    PropFormat(("CircScrollTrigger", "{:d}"), ),
-                   '''Option "CircScrollTrigger" "integer" {{{2
+                   '''Option "CircScrollTrigger" "integer"
               Trigger region on the touchpad to start circular scrolling
 
               0   All Edges
@@ -281,25 +281,25 @@ class NProp1804(NProp):  # {{{1
               8   Top Left Corner
               Property: "Synaptics Circular Scrolling Trigger"
         ''')
-    cirpad = NProp("Synaptics Circular Pad",  # = 295
+    cirpad = NProp("Synaptics Circular Pad",  # {{{1 = 295
                    PropFormat(("CircularPad", "{:b}"), ),
-                   '''Option "CircularPad" "boolean" {{{2
+                   '''Option "CircularPad" "boolean"
               Instead  of  being a rectangle, the edge is the ellipse enclosed
               by  the  Left/Right/Top/BottomEdge  parameters.   For   circular
               touchpads. Property: "Synaptics Circular Pad"
         ''')
-    palm_detection = NProp("Synaptics Palm Detection",  # = 296
+    palm_detection = NProp("Synaptics Palm Detection",  # {{{1 = 296
                            PropFormat(("PalmDetect", "{:b}"), ),
                            '''
-        Option "PalmDetect" "boolean" {{{2
+        Option "PalmDetect" "boolean"
               If  palm  detection  should  be  enabled.   Note  that this also
               requires hardware/firmware support from the touchpad.  Property:
               "Synaptics Palm Detection"
         ''')
-    palm_dimensions = NProp("Synaptics Palm Dimensions",  # = 297
+    palm_dimensions = NProp("Synaptics Palm Dimensions",  # {{{1 = 297
                             PropFormat(("PalmMinWidth", "{:d}"),
                                        ("PalmMinZ", "{:d}")),
-                            '''Option "PalmMinWidth" "integer" {{{2
+                            '''Option "PalmMinWidth" "integer"
               Minimum  finger  width  at  which  touch  is  considered a palm.
               Property: "Synaptics Palm Dimensions"
 
@@ -307,10 +307,10 @@ class NProp1804(NProp):  # {{{1
               Minimum finger pressure at which touch  is  considered  a  palm.
               Property: "Synaptics Palm Dimensions"
         ''')
-    coasting_speed = NProp("Synaptics Coasting Speed",  # = 298
+    coasting_speed = NProp("Synaptics Coasting Speed",  # {{{1 = 298
                            PropFormat(("CoastingSpeed", "{:f}", "3"),
                                       ("CoastingFriction", "{:f}", "3")),
-                           '''Option "CoastingSpeed" "float" {{{2
+                           '''Option "CoastingSpeed" "float"
               Your  finger  needs  to  produce this many scrolls per second in
               order to start coasting.  The default is 20 which should prevent
               you   from   starting   coasting  unintentionally.   0  disables
@@ -323,7 +323,7 @@ class NProp1804(NProp):  # {{{1
     pressure_motion = NProp("Synaptics Pressure Motion (",  # = 299 {{{1
                             PropFormat(("PressureMotionMinZ", "{:d}"),
                                        ("PressureMotionMaxZ", "{:d}")),
-                            '''Option "PressureMotionMinZ" "integer" {{{2
+                            '''Option "PressureMotionMinZ" "integer"
               Finger  pressure  at  which  minimum  pressure  motion factor is
               applied. Property: "Synaptics Pressure Motion"
 
@@ -331,13 +331,13 @@ class NProp1804(NProp):  # {{{1
               Finger pressure at  which  maximum  pressure  motion  factor  is
               applied.  Property: "Synaptics Pressure Motion"
         ''')
-    pressure_motion_factor = NProp(
+    pressure_motion_factor = NProp(  # {{{1
         "Synaptics Pressure Motion Factor",  # = 300(int) -> 304(float)
         PropFormat(("PressureMotionMinFactor", "{:f}"),
                    ("PressureMotionMaxFactor", "{:f}")),
         # PropFormat(("PressureMotionMinFactor", "{:d}"),
         #            ("PressureMotionMaxFactor", "{:d}")),
-        '''Option "PressureMotionMinFactor" "integer" {{{2
+        '''Option "PressureMotionMinFactor" "integer"
               Lowest  setting for pressure motion factor. Property: "Synaptics
               Pressure Motion Factor"
 
@@ -345,7 +345,7 @@ class NProp1804(NProp):  # {{{1
               Greatest  setting  for   pressure   motion   factor.   Property:
               "Synaptics Pressure Motion Factor"
         ''')
-    resolution_detect = NProp("Synaptics Resolution Detect",  # = 301
+    resolution_detect = NProp("Synaptics Resolution Detect",  # {{{1 = 301
                               PropFormat(("ResolutionDetect", "{:b}"), ),
                               '''
         Option "ResolutionDetect" "boolean" {{{
@@ -360,9 +360,9 @@ class NProp1804(NProp):  # {{{1
               which  can  provide  smoother  mouse  movement  in  such  cases.
               Property: "Synaptics Resolution Detect"
         ''')
-    grab_event_device = NProp("Synaptics Grab Event Device",  # = 302
+    grab_event_device = NProp("Synaptics Grab Event Device",  # {{{1 = 302
                               PropFormat(("GrabEventDevice", "{:b}"), ),
-                              '''Option "GrabEventDevice" "boolean" {{{2
+                              '''Option "GrabEventDevice" "boolean"
               If GrabEventDevice is true,  the  driver  will  grab  the  event
               device  for  exclusive  use  when  using  the  linux  2.6  event
               protocol.  When  using  other  protocols,  this  option  has  no
@@ -376,9 +376,9 @@ class NProp1804(NProp):  # {{{1
               achieved by switching to a text console and then switching  back
               to X.
         ''')
-    gestures = NProp("Synaptics Gestures",  # = 303
+    gestures = NProp("Synaptics Gestures",  # {{{1 = 303
                      PropFormat(("TapAndDragGesture", "{:b}"), ),
-                     '''Option "TapAndDragGesture" "boolean" {{{2
+                     '''Option "TapAndDragGesture" "boolean"
               Switch  on/off  the  tap-and-drag  gesture.   This gesture is an
               alternative  way  of  dragging.   It  is  performed  by  tapping
               (touching  and  releasing  the  finger), then touching again and
@@ -386,30 +386,30 @@ class NProp1804(NProp):  # {{{1
               default  and  can  be  disabled by setting the TapAndDragGesture
               option to false. Property: "Synaptics Gestures"
         ''')
-    capabilities = NProp("Synaptics Capabilities",  # = 304
+    capabilities = NProp("Synaptics Capabilities",  # {{{1 = 304
                          PropFormat((
                                  "Capabilities",
                                  "{:d} {:d} {:d} {:d} {:d} {:d} {:d}"), ),
                          "")
-    pad_resolution = NProp("Synaptics Pad Resolution",
+    pad_resolution = NProp("Synaptics Pad Resolution",  # {{{1
                            # PropFormat(("ResolutionDetect", "{:d} {:d"}), ),
                            None,  # read-only
                            """Synaptics Pad Resolution
                               32 bit unsigned, 2 values (read-only),
                               vertical, horizontal in units/millimeter.
                            """)  # = 305
-    area = NProp("Synaptics Area",
+    area = NProp("Synaptics Area",  # {{{1
                  PropFormat(("AreaLeftEdge", "{:d}"),
                             ("AreaRightEdge", "{:d}"),
                             ("AreaTopEdge", "{:d}"),
                             ("AreaBottomEdge", "{:d}")),
                  "")  # = 306
-    softareas = NProp("Synaptics Soft Button Areas",  # = 307
+    softareas = NProp("Synaptics Soft Button Areas",  # {{{1 = 307
                       PropFormat((
                           "SoftButtonAreas",
                           "{:P} {:P} {:P} {:P} {:P} {:P} {:P} {:P}")),
                       '''
-        Option "SoftButtonAreas" "RBL RBR RBT RBB MBL MBR MBT MBB" {{{2
+        Option "SoftButtonAreas" "RBL RBR RBT RBB MBL MBR MBT MBB"
               This  option is only available on ClickPad devices.  Enable soft
               button click area support on ClickPad devices.  The  first  four
               parameters  define  the area of the right button, and the second
@@ -425,10 +425,10 @@ class NProp1804(NProp):  # {{{1
               "Synaptics Soft Button Areas"
               """
         ''')
-    noise_cancellation = NProp("Synaptics Noise Cancellation",  # = 308
+    noise_cancellation = NProp("Synaptics Noise Cancellation",  # {{{1 = 308
                                PropFormat(("HorizonHysterisis", "{:d}"),
                                           ("VerticalHysterisis", "{:d}")),
-                               '''Noise cancellation {{{2
+                               '''Noise cancellation
        The synaptics has a built-in noise cancellation  based  on  hysteresis.
        This means that incoming coordinates actually shift a box of predefined
        dimensions such that it covers the incoming coordinate,  and  only  the
@@ -436,9 +436,9 @@ class NProp1804(NProp):  # {{{1
        better,  but  the  likelyhood  of  noise  motion  coming  through  also
        increases.
         ''')
-    device_product_id = NProp("Device Product ID", None, "")  # = 267 {{{2
-    device_node = NProp("Device Node", None,  # = 266
-                        '''Option "Device" "string" {{{2
+    device_product_id = NProp("Device Product ID", None, "")  # {{{1 = 267
+    device_node = NProp("Device Node", None,  # {{{1 = 266
+                        '''Option "Device" "string"
               This  option  specifies the device file in your "/dev" directory
               which will be used to access the physical device.  Normally  you
               should  use  something like "/dev/input/eventX", where X is some
@@ -655,10 +655,11 @@ class NProp1804(NProp):  # {{{1
         r = r.replace("\t", " ")
         seq = r.split(",")
         # print(seq)
-        if len(seq) != len(self.vals):
-            import pdb; pdb.set_trace()
+        n1, n2 = len(seq), len(self.vals)
+        if n1 != n2:
+            warn("{} != {}".format(n1, n2))
         for n, i in enumerate(seq):
-            self.vals[n] = i
+            self.vals[n] = i.strip()
         return len(seq)
 
 

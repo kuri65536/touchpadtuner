@@ -170,43 +170,47 @@ def compose_format(fmt, vals):  # {{{2
 
 
 # wrapper for mypy {{{1
-class IntVar(object):
+class GuiVar(object):  # {{{1
+    def get(self):  # {{{1
+        # type: () -> Text
+        assert False
+
+
+class IntVar(GuiVar):  # {{{1
     def __init__(self, v):
-        # type: (Optional[tk.IntVar]) -> None
+        # type: (tk.IntVar) -> None
         self._val = v
 
     def get(self):
-        # type: () -> int
-        if self._val is None:
-            return 0
+        # type: () -> Text
         ret = int(self._val.get())  # type: ignore # for Tk
-        return ret
+        return Text(ret)
 
 
-class FltVar(object):
+class FltVar(GuiVar):  # {{{1
     def __init__(self, v):
         # type: (float) -> None
         self._val = tk.DoubleVar()  # type: ignore # for Tk
         self._val.set(v)  # type: ignore
 
     def get(self):
-        # type: () -> float
+        # type: () -> Text
         assert self._val is not None
         ret = float(self._val.get())  # type: ignore # for Tk
-        return ret
+        return Text(ret)
 
     def get_var(self):
         # type: () -> tk.DoubleVar
         return self._val  # type: ignore # for Tk
 
 
-class BoolVar(object):
+class BoolVar(GuiVar):  # {{{1
     def __init__(self, v):
         # type: (Optional[tk.IntVar]) -> None
         self._val = v
 
     def get(self):
-        # type: () -> bool
+        # type: () -> Text
         assert self._val is not None
         return int(self._val.get()) == 1  # type: ignore # for Tk
 
@@ -217,16 +221,16 @@ class BoolVar(object):
         return v
 
 
-class CmbVar(object):
+class CmbVar(GuiVar):  # {{{1
     def __init__(self, v):
         # type: (Optional[ttk.Combobox]) -> None
         self._val = v
 
     def get(self):
-        # type: () -> int
+        # type: () -> Text
         assert self._val is not None
         ret = int(self._val.current())  # type: ignore # for Tk
-        return ret
+        return Text(ret)
 
 
 def open_file(fname, mode):  # {{{2

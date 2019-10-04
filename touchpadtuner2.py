@@ -16,7 +16,7 @@ import logging
 from logging import debug as debg, info, warning as warn, error as eror
 
 import common
-from common import (BoolVar, CmbVar, FltVar, IntVar,
+from common import (BoolVar, CmbVar, FltVar, GuiVar, IntVar,
                     open_file, )
 from xprops import NProp, NPropDb
 from xprops2 import NProp1804 as NProp2
@@ -29,6 +29,7 @@ try:
     from typing import (Any, Callable, Dict, IO, Iterable, List, Optional,
                         Text, Tuple, Union, )
     Any, Callable, Dict, IO, Iterable, List, Optional, Text, Tuple, Union
+    GuiVar
 except:
     pass
 
@@ -58,36 +59,23 @@ class NPropGui(object):  # {{{1
         # type: (NProp) -> None
         self.prop = prop
         self.typ = "32"
-        self.vars = []  # type: List[Any]
-        self._cache = []  # type: List[Text]
+        self.vars = []  # type: List[GuiVar]
         self.limit = self.limit_noop
-
-    def is_loaded(self):  # {{{1
-        # type: () -> bool
-        return len(self._cache) > 0
 
     def is_changed(self):  # {{{1
         # type: () -> bool
-        if not self.is_loaded():
-            self.load()
         cur = self.compose()
-        for n, a in enumerate(cur):
-            b = self._cache[n]
+        for a, b in zip(cur, self.prop.vals):
             if not self.cmp(a, b):
                 return True
         return False
-
-    def load(self):  # {{{1
-        # type: () -> List[Text]
-        ret = self._cache = xi.prop_get(self.prop.prop_id)
-        return ret
 
     def compose(self):  # {{{1
         # type: () -> List[Text]
         ret = []
         for var in self.vars:
             n = var.get()
-            ret.append(Text(n))
+            ret.append(n)
         return ret
 
     def cmp(self, a, b):  # {{{1
@@ -109,7 +97,6 @@ class NPropGuiInt(NPropGui):  # {{{1
     def __init__(self, prop, typ):  # {{{1
         # type: (NProp, int) -> None
         NPropGui.__init__(self, prop)
-        self.vars = []  # type: List[IntVar]
         self.typ = Text(typ)
 
     def append(self, var):  # {{{1
@@ -134,7 +121,7 @@ class NPropGuiFlt(NPropGui):   # {{{1
     def __init__(self, prop):  # {{{1
         # type: (NProp) -> None
         NPropGui.__init__(self, prop)
-        self.vars = []  # type: List[FltVar]
+        self.typ = "float"
 
     def append(self, var):  # {{{1
         # type: (FltVar) -> 'NPropGuiFlt'
@@ -175,7 +162,6 @@ class NPropGuiBol(NPropGui):   # {{{1
         # type: (NProp) -> None
         NPropGui.__init__(self, prop)
         self.typ = "8"
-        self.vars = []  # type: List[BoolVar]
 
     def append(self, var):  # {{{1
         # type: (BoolVar) -> 'NPropGuiBol'
@@ -211,7 +197,6 @@ class NPropGuiCmb(NPropGui):   # {{{1
         # type: (NProp, int) -> None
         NPropGui.__init__(self, prop)
         self.typ = Text(typ)
-        self.vars = []  # type: List[CmbVar]
 
     def append(self, var):  # {{{1
         # type: (CmbVar) -> 'NPropGuiCmb'
@@ -387,7 +372,7 @@ class XInputDB(object):  # {{{1
             ret = ret[1:]
         return ret
 
-    def prop_enum(self):  # {{{1
+    def propgui_enum(self):  # {{{1
         # type: () -> Iterable[NPropGui]
         for k, v in self.__dict__.items():
             if not isinstance(v, NPropGui):
@@ -452,17 +437,18 @@ class XInputDB(object):  # {{{1
         info("-------- start apply() function -------------------------------")
         self._callback = fn
 
-        for prop in self.prop_enum():
+        for pgui in self.propgui_enum():
+            prop = pgui.prop
             if not f_changed:
                 pass
-            elif prop.prop.prop_id < 1:
+            elif prop.prop_id < 1:
                 eror("did not found: {}-{}".format(
-                        prop.prop.prop_id, prop.prop.key))
+                        prop.prop_id, prop.key))
                 continue
-            elif not prop.is_changed():
+            elif not pgui.is_changed():
                 continue
-            info("syncing {}...".format(prop.prop.prop_id))
-            prop.sync()
+            info("syncing {}...".format(prop.prop_id))
+            pgui.sync()
 
         return False
 
@@ -880,7 +866,7 @@ def buildgui(opts):  # {{{1
     draw.bind(gui.lastwid, "<ButtonRelease-1>", gui.cmdfingerhig)
     # gui.fingerhig.pack(side=tk.LEFT, expand=True, fill="x")
     frm_.pack(fill="x", anchor=tk.W)
-    v = IntVar(None)
+    v = IntVar(draw.var_int())
     xi.finger.append(v)  # dummy
 
     frm = draw.frame(page1)
@@ -1097,8 +1083,8 @@ def gui_canvas(inst, btns,  # {{{2
     draw.rectangle(inst, 0, 0, _100, _100, fill='white')  # ,stipple='gray25')
     if len(prms) > 0:
         edges = prms[0]
-        gui.ex1, gui.ey1 = gui_scale(xi.edges.cache(0), xi.edges.cache(2))
-        gui.ex2, gui.ey2 = gui_scale(xi.edges.cache(1), xi.edges.cache(3))
+        gui.ex1, gui.ey1 = gui_scale(edges[0], edges[2])
+        gui.ex2, gui.ey2 = gui_scale(edges[1], edges[3])
         # print("gui_canvas: edge: ({},{})-({},{})".format(x1, y1, x2, y2))
         areas = prms[1]
         gui.s1x1, gui.s1y1, gui.s1x2, gui.s1y2 = gui_softarea(areas[0:4])
