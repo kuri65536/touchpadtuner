@@ -637,14 +637,15 @@ class Gui(object):  # {{{1
     def cmdsave(self):  # {{{2
         # type: () -> None
         opts = common.opts
+        sec = opts.xsection
         xf = XConfFile()
         db = xf.read(opts.fnameIn)
-        for n, p in xi.dumpdb().items("xinput"):
+        for n, p in xi.dumpdb().items(sec):
             try:
-                prop = db.get("xinput", p)
+                prop = db.get(sec, p)
                 prop.update_by_prop(p)
             except KeyError:
-                db.put("input", p)
+                db.put(sec, p)
         warn("output saved to {}".format(opts.fnameOut))
         xf.save(opts.fnameOut, opts.fnameIn, db)
 

@@ -11,14 +11,14 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 from __future__ import print_function
 from logging import info, warning as warn
 import re
-from typing import Dict, Iterator, Optional, Text, Tuple
+from typing import Dict, Iterator, Optional, Text, Tuple, Type
 # from logging import info
 
 import common
 from xprops import NProp, PropFormat
 
 
-Dict, Iterator, Optional, Text, Tuple
+Dict, Iterator, Optional, Text, Tuple, Type
 
 
 class NProp1804(NProp):  # {{{1
@@ -676,6 +676,14 @@ class NProp1804(NProp):  # {{{1
         if len(ret) > 0:
             ret = ret[1:]
         return ret
+
+    @classmethod
+    def props_copy(cls, nprop):  # {{{1
+        # type: (Type[NProp]) -> None
+        for k, v in cls.__dict__.items():
+            if not isinstance(v, NProp):
+                continue
+            setattr(nprop, k, v)
 
 
 # main {{{1

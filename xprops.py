@@ -9,10 +9,9 @@ v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 from __future__ import print_function
-# from logging import info
+from logging import debug as debg, error as eror, info
 
-from common import (Percent,
-                    parseBool, parseFloat, parseInt, parseIntOrPercent, )
+from common import (Percent, )
 
 try:
     from typing import (Any, Callable, Dict, IO, Iterable, Iterator,
@@ -58,6 +57,19 @@ class PropFormat(Sized):  # {{{1
         # type: () -> Iterator[Tuple[Text, Text]]
         for fmt in self.fmts:
             yield fmt
+
+    def count_1fmt(self, fmt):  # {{{1
+        # type: (Tuple[Text, Text]) -> int
+        args = fmt[1]
+        count = len(args) - len(args.replace("{", ""))
+        return count
+
+    def count_props(self):  # {{{1
+        # type: () -> int
+        sum = 0
+        for fmt in self.fmts:
+            sum += self.count_1fmt(fmt)
+        return sum
 
 
 class NProp(object):  # {{{1
@@ -125,12 +137,12 @@ class NProp(object):  # {{{1
 
         # number of xinput property-id
         self.prop_id = -1
-        # loaded values from xinput
-        self.vals = [""] * self.prop_num(fmts)   # type: List[Text]
 
         # formatter for .xconf output
         fmts = fmts if fmts is not None else PropFormat(("dummy", ""))
         self.fmts = fmts
+        # loaded values from xinput
+        self.vals = [""] * fmts.count_props()   # type: List[Text]
         # keyword in xinput list-props
         self.key = key
         # text for this property in man synaptic
@@ -170,11 +182,11 @@ class NProp(object):  # {{{1
 
     @classmethod
     def compose_format(cls, fmt, v):  # cls {{{1
-        # type: (Text, Any) -> Text
-        # TODO: more complex conversion.
+        # type: (Text, Text) -> Text
+        # TODO(shimoda): more complex conversion.
         fmt = fmt.replace("{:P}", "{}")
         if not isinstance(v, (tuple, list)):
-            return fmt.format(v)
+            return v
         _v = []  # type: List[Any]
         for i in v:
             if isinstance(i, Percent):
@@ -188,14 +200,14 @@ class NProp(object):  # {{{1
         return fmt.format(*_v)
 
     def compose(self, idx):  # {{{1
-        # type: (int) -> Text
+        # type: (int) -> Tuple[Text, Text]
         opts = self.fmts
         assert 0 <= idx < len(opts)
         opt, fmt = opts[idx]
         fmt = ((" " * 8) + 'Option "' + opt + '" "' +
                fmt + '"  # by touchpadtuner\n')
         val = self.vals[idx]
-        return self.compose_format(fmt, val)
+        return opt, self.compose_format(fmt, val)
 
     def compose_all(self):  # {{{1
         # type: () -> Text
@@ -203,30 +215,52 @@ class NProp(object):  # {{{1
         for n, val in enumerate(self.vals):
             if len(val) < 1:
                 continue
-            ret += self.compose(n)
+            key, line = self.compose(n)
+            ret += line
         return ret
 
+    def compose_xconf(self):  # {{{1
+        # type: () -> Iterable[Tuple[Text, Text]]
+        n = 0
+        for key, fmt in self.fmts:
+            params = ""
+            m = self.fmts.count_1fmt((key, fmt))
+            vals = self.vals[n: n + m]
+            n += m
+            for val in vals:
+                if len(val) < 1:
+                    # TODO(shimoda): take default for missing parts.
+                    eror("missing parameter: {}".format(key))
+                    params += ' "nnn"'
+                else:
+                    params += ' "' + val + '"'
+            line = ((" " * 8) + 'Option "' + key + '" "' +
+                    params + '"  # by touchpadtuner\n')
+            yield (key, line)
+
     @classmethod
-    def parse(cls, src):  # cls {{{1
-        # type: (Text) -> Optional[NProp]
+    def parse_xconfline(cls, src):  # cls {{{1
+        # type: (Text) -> Optional[Tuple[Text, NProp]]
         _src = src.strip()
         if _src.startswith("#"):
             return None  # comment line
         if not _src.lower().startswith("option "):
             return None  # not option line.
         _src = _src[8:].strip()  # remove 'Option' with starting '"'.
+        debg("NProp.xconf-parse: {}".format(_src))
         for key, ret in cls.props():
+            idx = 0
             for n, (opt, fmt) in enumerate(ret.fmts):
-                o = opt + '" '
-                if not _src.startswith(o):
+                o = opt.lower() + '" '
+                if not _src.lower().startswith(o):
+                    idx += ret.fmts.count_1fmt((opt, fmt))
                     continue
+                debg("NProp.xconf-parse: match with {}".format(o))
                 _src = _src[len(o):]
                 _src = cls.parse_quote(_src)
-                v = cls.parse_xconf(fmt, _src)
-                if v is None:
-                    break
-                ret.vals[n] = v
-                return ret
+                for n, v in cls.parse_xconf(idx, fmt, _src):
+                    ret.vals[n] = v
+                return opt, ret
         return None
 
     @classmethod
@@ -251,41 +285,26 @@ class NProp(object):  # {{{1
         return src
 
     @classmethod
-    def parse_xconf(self, fmt, _src):  # {{{1
-        # type: (Text, Text) -> Any
+    def parse_xconf(self, idx, fmt, _src):  # {{{1
+        # type: (int, Text, Text) -> Iterable[Tuple[int, Text]]
         # TODO(Shimoda): remove the inline comment or ends '"'.
         if fmt == "{:d}":
-            return parseInt(_src)
+            yield (idx, _src)
+            return
         elif fmt == "{:b}":
-            return parseBool(_src)
+            yield (idx, _src)
+            return
         elif fmt == "{:f}":
-            return parseFloat(_src)
+            yield (idx, _src)
+            return
         # else:
         #     assert False, "xconfs fmt {} not implemented".format(fmt)
 
         seq = fmt.split(" ")
-        func = parseInt  # type: Callable[[Any], Any]
-        if seq[0] == "{:d}":
-            func = parseInt
-        elif seq[0] == "{:b}":
-            func = parseBool
-        elif seq[0] == "{:f}":
-            func = parseFloat
-        elif seq[0] == "{:P}":
-            func = parseIntOrPercent
-        else:
-            raise RuntimeError("format:{} can't be parsed".format(seq[0]))
-
-        ret = []  # type: List[Any]
         for n, term in enumerate(_src.split(" ")):
             if n >= len(seq):
-                return ret
-            v = func(term)
-            if v is None:
-                # TODO(Shimoda): log error messsage.
-                return None
-            ret.append(v)
-        return ret
+                return
+            yield (idx + n, term)
 
     def update(self, prop, idx):  # {{{1
         # type: ('NProp', int) -> 'NProp'
@@ -390,7 +409,7 @@ class NPropDb(Sized):  # {{{1
                     return i
         if fallback is not None:
             return fallback
-        raise KeyError("invalid key '{}'".format())
+        raise KeyError("invalid key '{}'".format(sec))
 
     def put(self, sec, prop):  # {{{1
         # type: (Text, NProp) -> None
@@ -410,8 +429,13 @@ class NPropDb(Sized):  # {{{1
 
     def items(self, sec):  # {{{1
         # type: (Text) -> Iterable[Tuple[int, NProp]]
-        for i in self.props[sec]:
+        seq = self.props.get(sec, [])
+        for i in seq:
             yield (i.prop_id, i)
+
+    def report(self):  # {{{1
+        # type: () -> None
+        info("db.report: sections: " + Text(self.props.keys()))
 
 
 # main {{{1
