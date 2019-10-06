@@ -15,9 +15,9 @@ import common
 from xprops import NProp, NPropDb
 
 try:
-    from typing import (Any, Callable, Dict, IO, List, Optional,
+    from typing import (Any, Callable, Dict, IO, Iterable, List, Optional,
                         Text, Tuple, Union, )
-    Any, Callable, Dict, IO, List, Optional, Text, Tuple, Union
+    Any, Callable, Dict, IO, Iterable, List, Optional, Text, Tuple, Union
 except:
     pass
 
@@ -114,32 +114,31 @@ class XConfFile(object):  # {{{1
         self.cur_section = ""
         self.sections = {}  # type: Dict[Text, int]
 
+    def xconf_iter(self, fname):  # {{{1
+        # type: (Text) -> Iterable[Tuple[int, Text, Text]]
+        self.section_parser_clear()
+        flagsSyn = XSectionSynaptics()
+        with common.open_file(fname, "r") as fp:
+            for i, line in enumerate(fp):
+                sec = self.section_parser(line)
+                if sec >= 0:
+                    flagsSyn.parse_line(line)
+                    yield (i, self.cur_section, line)
+                else:
+                    flagsSyn = XSectionSynaptics()
+                    yield (i, "", line)
+
     def read(self, fname):  # {{{1
         # type: (str) -> NPropDb
         ret = NPropDb()
-        fp = common.open_file(fname, "r")
-        self.section_parser_clear()
-        flagsSyn = XSectionSynaptics()
-        lines = []  # type: List[Text]
-        for i, line in enumerate(fp):
-            sec = self.section_parser(line)
-            if not self.f_section:
-                continue
-            lines.append(line)
-            if sec >= 0:
-                flagsSyn.parse_line(line)
-                continue
-            buf, flags = lines, flagsSyn
-            lines, flagsSyn = [], XSectionSynaptics()
-            if not flags.is_enabled:
+        for i, sec, line in self.xconf_iter(fname):
+            if len(sec) < 1:
                 continue
             info("xconf-read: section '{}'".format(self.cur_section))
-            for line in buf:
-                prop = NProp.parse_xconfline(line)
-                if prop is None:
-                    continue  # just ignore that line could not be parsed.
-                ret.put(self.cur_section, prop[1])
-        fp.close()
+            prop = NProp.parse_xconfline(line)
+            if prop is None:
+                continue  # just ignore that line could not be parsed.
+            ret.put(self.cur_section, prop[1])
         ret.report()
         return ret
 
@@ -173,30 +172,35 @@ class XConfFile(object):  # {{{1
             EndSection  # }}}
         '''
         fp = common.open_file(fname, "w")
-        fi = common.open_file(fnameIn, "r")
-        buf = []  # type: List[Text]
-        self.section_parser_clear()
-        flagsSyn = XSectionSynaptics()
-        for i, line in enumerate(fi):
-            n_sec = self.section_parser(line)
-            if not self.f_section:
+        prv_sec = ""
+        done = []  # type: List[Text]
+        for i, sec, line in self.xconf_iter(fnameIn):
+            if len(sec) < 1:
+                if len(prv_sec) > 0:
+                    self.save_remains(fp, db, prv_sec, done)
+                prv_sec, done = "", []
                 fp.write(line)
                 continue
-            buf.append(line)
-            if n_sec > 0:
-                flagsSyn.parse_line(line)
-                continue
-            if flagsSyn.is_enabled:
-                # leave section -> parse buffer!
-                self.parse_section(fp, db, buf)
+            prv_sec = sec
+            for i in range(1):
+                tup = NProp.parse_xconfline(line)
+                if tup is None:
+                    continue  # write through
+                prop = tup[1]
+                cur = db.get(sec, prop, NProp("", None, ""))
+                if cur.key == "":
+                    done.append(tup[0])
+                    continue  # write thruogh
+                if prop.same_prop(cur):
+                    done.append(tup[0])
+                    continue  # write thruogh
+                # just update props, write at save_remains().
+                cur.update_by_prop_passive(prop)
+                break
             else:
-                for s in buf:
-                    fp.write(s)
-            buf = []
-            flagsSyn = XSectionSynaptics()
-            self.cur_section = ""
+                fp.write(line)
+
         # did not close section...
-        fi.close()
         fp.close()
         return False
 
@@ -250,33 +254,9 @@ class XConfFile(object):  # {{{1
                 info("xconf.save_remains: {}".format(key))
                 if key in done:
                     continue
-                fp.write(line)
-        return False
-
-    def parse_section(self, fp, db, buf):  # {{{1
-        # type: (IO[Text], NPropDb, List[Text]) -> bool
-        sec = self.cur_section
-        info("xconf.save.parse_section: {}".format(sec))
-        done = []  # type: List[Text]
-        for line in buf[:-1]:
-            ret = NProp.parse_xconfline(line)
-            info("xconf.save.parse_section: {}-{}".format(line.strip(), ret))
-            if ret is None:
-                fp.write(line)
-                continue
-            key, prop = ret
-            done.append(key)
-            try:
-                cur = db.get(sec, prop)
-                if prop.same_prop(cur):
-                    fp.write(line)
+                if '"nnn"' in line:
                     continue
-                line = prop.compose_all()
                 fp.write(line)
-            except KeyError:
-                pass
-        self.save_remains(fp, db, sec, done)
-        fp.write(buf[-1])
         return False
 
 

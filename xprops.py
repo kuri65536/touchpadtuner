@@ -148,6 +148,16 @@ class NProp(object):  # {{{1
         # text for this property in man synaptic
         self.hint = self.format_hint(hint)
 
+    def copy(self, clear_vals=False):  # {{{1
+        # type: (bool) -> 'NProp'
+        ret = NProp(self.key, self.fmts, self.hint)
+        if clear_vals:
+            vals = []
+            for val in self.vals:
+                vals.append("")
+            self.vals = vals
+        return ret
+
     def is_valid(self):  # {{{1
         # type: () -> bool
         return self.prop_id != -1
@@ -248,16 +258,17 @@ class NProp(object):  # {{{1
             return None  # not option line.
         _src = _src[8:].strip()  # remove 'Option' with starting '"'.
         debg("NProp.xconf-parse: {}".format(_src))
-        for key, ret in cls.props():
+        for key, prop in cls.props():
             idx = 0
-            for n, (opt, fmt) in enumerate(ret.fmts):
+            for n, (opt, fmt) in enumerate(prop.fmts):
                 o = opt.lower() + '" '
                 if not _src.lower().startswith(o):
-                    idx += ret.fmts.count_1fmt((opt, fmt))
+                    idx += prop.fmts.count_1fmt((opt, fmt))
                     continue
                 debg("NProp.xconf-parse: match with {}".format(o))
                 _src = _src[len(o):]
                 _src = cls.parse_quote(_src)
+                ret = prop.copy(clear_vals=True)
                 for n, v in cls.parse_xconf(idx, fmt, _src):
                     ret.vals[n] = v
                 return opt, ret
@@ -379,15 +390,25 @@ class NProp(object):  # {{{1
                 continue  # skip no input.
             self.vals[n] = val  # always override.
 
+    def update_by_prop_passive(self, inp):  # {{{1
+        # type: (NProp) -> None
+        assert self.prop_id == inp.prop_id
+        assert len(self.vals) > 0
+        for n, val in enumerate(inp.vals):
+            if len(val) < 1:
+                continue  # skip no input.
+            cur = self.vals[n]
+            if len(cur) > 0:
+                continue  # skip, the current value is remained.
+            self.vals[n] = val  # override if the current value is none.
+
     def same_prop(self, b):  # {{{1
         # type: (NProp) -> bool
         assert self.prop_id == b.prop_id
         assert len(self.vals) > 0
         for va, vb in zip(self.vals, b.vals):
-            if va is None:
-                continue
-            if vb is None:
-                return False
+            if len(va) < 1:
+                continue  # ignore (not set.)
             if va != vb:
                 return False
         return True
