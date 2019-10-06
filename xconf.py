@@ -138,7 +138,7 @@ class XConfFile(object):  # {{{1
             prop = NProp.parse_xconfline(line)
             if prop is None:
                 continue  # just ignore that line could not be parsed.
-            ret.put(self.cur_section, prop[1])
+            ret.put(sec, prop[1])
         ret.report()
         return ret
 
@@ -243,7 +243,7 @@ class XConfFile(object):  # {{{1
                 return self.n_section
         return self.n_section
 
-    def save_remains(self, fp, db, sec, done):  # {{{2
+    def save_remains(self, fp, db, sec, done):  # {{{1
         # type: (IO[Text], NPropDb, Text, List[Text]) -> bool
         for n, prop in db.items(sec):
             info("xconf.save_remains: {}".format(prop.key))
@@ -274,7 +274,9 @@ def main():  # {{{1
     NProp1804.props_copy(NProp)
     xf = XConfFile()
     db = xf.read(opts.fnameIn)
-    # db.put(opts.xsection, prop)  # update some props...
+    p = db.get(opts.xsection, NProp1804.tap_action)
+    p.vals[5] = "3"
+    db.put(opts.xsection, p)
     xf.save("test-xconf-save.conf", opts.fnameIn, db)
     return 0
 

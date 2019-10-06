@@ -151,6 +151,7 @@ class NProp(object):  # {{{1
     def copy(self, clear_vals=False):  # {{{1
         # type: (bool) -> 'NProp'
         ret = NProp(self.key, self.fmts, self.hint)
+        ret.prop_id = self.prop_id
         if clear_vals:
             vals = []
             for val in self.vals:
@@ -244,8 +245,8 @@ class NProp(object):  # {{{1
                     params += ' "nnn"'
                 else:
                     params += ' "' + val + '"'
-            line = ((" " * 8) + 'Option "' + key + '" "' +
-                    params + '"  # by touchpadtuner\n')
+            line = ((" " * 8) + 'Option "' + key + '"' +
+                    params + '  # by touchpadtuner\n')
             yield (key, line)
 
     @classmethod
@@ -269,7 +270,7 @@ class NProp(object):  # {{{1
                 _src = _src[len(o):]
                 _src = cls.parse_quote(_src)
                 ret = prop.copy(clear_vals=True)
-                for n, v in cls.parse_xconf(idx, fmt, _src):
+                for n, v in cls.parse_xconfopt(idx, fmt, _src):
                     ret.vals[n] = v
                 return opt, ret
         return None
@@ -296,7 +297,7 @@ class NProp(object):  # {{{1
         return src
 
     @classmethod
-    def parse_xconf(self, idx, fmt, _src):  # {{{1
+    def parse_xconfopt(self, idx, fmt, _src):  # {{{1
         # type: (int, Text, Text) -> Iterable[Tuple[int, Text]]
         # TODO(Shimoda): remove the inline comment or ends '"'.
         if fmt == "{:d}":
