@@ -18,12 +18,10 @@ from logging import debug as debg, info, warning as warn, error as eror
 import common
 from common import (BoolVar, CmbVar, FltVar, GuiVar, IntVar,
                     open_file, )
-from xprops import NProp, NPropDb
-from xprops2 import NProp1804 as NProp2
+from xprops import NProp
+from xprops2 import NPropDb
 from xconf import XConfFile
 import wraptk as draw
-
-NProp2
 
 try:
     from typing import (Any, Callable, Dict, IO, Iterable, List, Optional,
@@ -256,36 +254,37 @@ class XInputDB(object):  # {{{1
 
     def __init__(self):  # {{{1
         # type: () -> None
-        NProp2.auto_id()
+        NPropDb.auto_id()
         self._callback = apply_none  # type: Callable[[List[Text]], bool]
 
-        self.edges = NPropGuiInt(NProp2.edges, 32)  # 274
-        self.finger = NPropGuiInt(NProp2.finger, 32)  # 275
-        self.taptime = NPropGuiInt(NProp2.tap_time, 32)  # 276
-        self.tapmove = NPropGuiInt(NProp2.tap_move, 32)  # 277
-        self.tapdurs = NPropGuiInt(NProp2.tap_durations, 32)  # 278
-        self.twoprs = NPropGuiInt(NProp2.two_finger_pressure, 32)  # 281
-        self.twowid = NPropGuiInt(NProp2.two_finger_width, 32)  # 282
-        self.scrdist = NPropGuiInt(NProp2.scrdist, 32)  # 283
-        self.edgescrs = NPropGuiBol(NProp2.edgescrs)  # 284
-        self.twoscr = NPropGuiBol(NProp2.two_finger_scrolling)
-        self.movespd = NPropGuiFlt(NProp2.move_speed)  # 286
-        self.lckdrags = NPropGuiBol(NProp2.locked_drags)  # 288
-        self.lckdrgto = NPropGuiInt(NProp2.locked_drags_timeout, 32)
-        self.taps = NPropGuiCmb(NProp2.tap_action, 8)  # 290
-        self.clks = NPropGuiCmb(NProp2.click_action, 8)  # 291
-        self.cirscr = NPropGuiBol(NProp2.cirscr)  # 292
-        self.cirdis = NPropGuiFlt(NProp2.cirdis)  # 293
-        self.cirtrg = NPropGuiCmb(NProp2.cirtrg, 8)  # 294
-        self.cirpad = NPropGuiBol(NProp2.cirpad)  # 295
-        self.palmdet = NPropGuiBol(NProp2.palm_detection)  # 296
-        self.palmdim = NPropGuiInt(NProp2.palm_dimensions, 32)  # 297
-        self.cstspd = NPropGuiFlt(NProp2.coasting_speed)  # 298
-        self.prsmot = NPropGuiInt(NProp2.pressure_motion, 32)  # 299 ???
-        self.prsfct = NPropGuiFlt(NProp2.pressure_motion_factor)
-        self.gestures = NPropGuiBol(NProp2.gestures)  # 303
-        self.softareas = NPropGuiInt(NProp2.softareas, 32)  # 307
-        self.noise = NPropGuiInt(NProp2.noise_cancellation, 32)  # 308
+        _ = NPropDb
+        self.edges = NPropGuiInt(_.edges, 32)  # 274
+        self.finger = NPropGuiInt(_.finger, 32)  # 275
+        self.taptime = NPropGuiInt(_.tap_time, 32)  # 276
+        self.tapmove = NPropGuiInt(_.tap_move, 32)  # 277
+        self.tapdurs = NPropGuiInt(_.tap_durations, 32)  # 278
+        self.twoprs = NPropGuiInt(_.two_finger_pressure, 32)  # 281
+        self.twowid = NPropGuiInt(_.two_finger_width, 32)  # 282
+        self.scrdist = NPropGuiInt(_.scrdist, 32)  # 283
+        self.edgescrs = NPropGuiBol(_.edgescrs)  # 284
+        self.twoscr = NPropGuiBol(_.two_finger_scrolling)
+        self.movespd = NPropGuiFlt(_.move_speed)  # 286
+        self.lckdrags = NPropGuiBol(_.locked_drags)  # 288
+        self.lckdrgto = NPropGuiInt(_.locked_drags_timeout, 32)
+        self.taps = NPropGuiCmb(_.tap_action, 8)  # 290
+        self.clks = NPropGuiCmb(_.click_action, 8)  # 291
+        self.cirscr = NPropGuiBol(_.cirscr)  # 292
+        self.cirdis = NPropGuiFlt(_.cirdis)  # 293
+        self.cirtrg = NPropGuiCmb(_.cirtrg, 8)  # 294
+        self.cirpad = NPropGuiBol(_.cirpad)  # 295
+        self.palmdet = NPropGuiBol(_.palm_detection)  # 296
+        self.palmdim = NPropGuiInt(_.palm_dimensions, 32)  # 297
+        self.cstspd = NPropGuiFlt(_.coasting_speed)  # 298
+        self.prsmot = NPropGuiInt(_.pressure_motion, 32)  # 299 ???
+        self.prsfct = NPropGuiFlt(_.pressure_motion_factor)
+        self.gestures = NPropGuiBol(_.gestures)  # 303
+        self.softareas = NPropGuiInt(_.softareas, 32)  # 307
+        self.noise = NPropGuiInt(_.noise_cancellation, 32)  # 308
 
         def limit(seq):
             # type: (List[Text]) -> bool
@@ -640,7 +639,7 @@ class Gui(object):  # {{{1
         sec = opts.xsection
         xf = XConfFile()
         db = xf.read(opts.fnameIn)
-        for name, p in NProp2.props():
+        for name, p in NProp.props():
             try:
                 prop = db.get(sec, p)
                 prop.update_by_prop(p)
@@ -796,7 +795,7 @@ def buildgui(opts):  # {{{1
     # Click Action
     seq = (["Disabled", "Left-Click", "Middel-Click", "Right-Click"] +
            [str(i) for i in range(4, 10)])
-    gui.label2(page1, "Click actions", NProp2.click_action)
+    gui.label2(page1, "Click actions", NPropDb.click_action)
     frm = draw.frame(page1)
     frm.pack()
     draw.label(frm, "1-Finger").pack(side=tk.LEFT, padx=10)
@@ -807,7 +806,7 @@ def buildgui(opts):  # {{{1
     xi.clks.append(gui.combobox(frm, seq, xi.clks.cache(2)))
 
     # Tap Action
-    gui.label2(page1, "Tap actions", NProp2.tap_action)
+    gui.label2(page1, "Tap actions", NPropDb.tap_action)
     frm = draw.frame(page1)
     frm.pack(anchor=tk.W)
     draw.label(frm, "RT", width=10).pack(side=tk.LEFT, padx=10)
@@ -832,7 +831,7 @@ def buildgui(opts):  # {{{1
     # Tap Threshold
     w = 10
     frm_ = draw.frame(page1)
-    gui.label3(frm_, "FingerLow", NProp2.finger, width=w)
+    gui.label3(frm_, "FingerLow", NPropDb.finger, width=w)
     xi.finger.append(gui.slider(frm_, 1, 255, cur=xi.finger.cache(0)))
     gui.fingerlow = gui.lastwid
     draw.bind(gui.lastwid, "<ButtonRelease-1>", gui.cmdfingerlow)
@@ -849,13 +848,13 @@ def buildgui(opts):  # {{{1
     xi.finger.append(v)  # dummy
 
     frm = draw.frame(page1)
-    gui.label3(frm, "Tap Time", NProp2.tap_time, width=w)
+    gui.label3(frm, "Tap Time", NPropDb.tap_time, width=w)
     xi.taptime.append(gui.slider(frm, 1, 255, xi.taptime.cache(0)))
     draw.label(frm, "Tap Move", width=10).pack(side=tk.LEFT)
     xi.tapmove.append(gui.slider(frm, 1, 255, xi.tapmove.cache(0)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page1)
-    gui.label3(frm, "Tap Durations", NProp2.tap_durations, width=w)
+    gui.label3(frm, "Tap Durations", NPropDb.tap_durations, width=w)
     xi.tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs.cache(0)))
     xi.tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs.cache(1)))
     xi.tapdurs.append(gui.slider(frm, 1, 255, xi.tapdurs.cache(2)))
@@ -863,15 +862,15 @@ def buildgui(opts):  # {{{1
 
     # page4 - Area {{{2
     frm = draw.frame(page4)
-    gui.label3(frm, "Palm detect", NProp2.palm_detection)
+    gui.label3(frm, "Palm detect", NPropDb.palm_detection)
     xi.palmdet.append(gui.checkbox(frm, "on", xi.palmdet.cache(0)))
-    gui.label3(frm, "Palm dimensions", NProp2.palm_dimensions)
+    gui.label3(frm, "Palm dimensions", NPropDb.palm_dimensions)
     xi.palmdim.append(gui.slider(frm, 0, 3100, xi.palmdim.cache(0)))
     xi.palmdim.append(gui.slider(frm, 0, 3100, xi.palmdim.cache(1)))
     frm.pack(anchor=tk.W)
 
     frm = draw.frame(page4)
-    gui.label3(frm, "Edge-x", NProp2.edges)
+    gui.label3(frm, "Edge-x", NPropDb.edges)
     xi.edges.append(gui.slider(frm, 0, 3100, xi.edges.cache(0)))
     xi.edges.append(gui.slider(frm, 0, 3100, xi.edges.cache(1)))
     draw.label(frm, "Edge-y").pack(side=tk.LEFT)
@@ -880,7 +879,7 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     gui.label2(page4, "Soft Button Areas "
-               "(RB=Right Button, MB=Middle Button)", NProp2.softareas,
+               "(RB=Right Button, MB=Middle Button)", NPropDb.softareas,
                anchor=tk.W)
     frm = draw.frame(page4)
     draw.label(frm, "RB-Left", width=10).pack(side=tk.LEFT, padx=10)
@@ -904,7 +903,7 @@ def buildgui(opts):  # {{{1
     frm.pack(anchor=tk.W)
 
     frm = draw.frame(page4)
-    gui.label3(frm, "Edge scroll", NProp2.edgescrs)
+    gui.label3(frm, "Edge scroll", NPropDb.edgescrs)
     xi.edgescrs.append(gui.checkbox(frm, "Vert", xi.edgescrs.cache(0)))
     xi.edgescrs.append(gui.checkbox(frm, "Horz", xi.edgescrs.cache(1)))
     xi.edgescrs.append(gui.checkbox(frm, "Corner Coasting",
@@ -913,20 +912,20 @@ def buildgui(opts):  # {{{1
 
     # page2 - two-fingers {{{2
     frm = draw.frame(page2)
-    gui.label3(frm, "Two-Finger Scrolling", NProp2.two_finger_scrolling)
+    gui.label3(frm, "Two-Finger Scrolling", NPropDb.two_finger_scrolling)
     xi.twoscr.append(gui.checkbox(frm, "Vert", xi.twoscr.cache(0)))
     xi.twoscr.append(gui.checkbox(frm, "Horz", xi.twoscr.cache(1)))
     frm.pack(anchor=tk.W)
 
     frm = draw.frame(page2)
-    gui.label3(frm, "Two-Finger Pressure", NProp2.two_finger_pressure)
+    gui.label3(frm, "Two-Finger Pressure", NPropDb.two_finger_pressure)
     xi.twoprs.append(gui.slider(frm, 1, 1000, xi.twoprs.cache(0)))
-    gui.label3(frm, "Two-Finger Width", NProp2.two_finger_width)
+    gui.label3(frm, "Two-Finger Width", NPropDb.two_finger_width)
     xi.twowid.append(gui.slider(frm, 1, 1000, xi.twowid.cache(0)))
     frm.pack(anchor=tk.W)
 
     frm = draw.frame(page2)
-    gui.label3(frm, "Scrolling Distance", NProp2.scrdist)
+    gui.label3(frm, "Scrolling Distance", NPropDb.scrdist)
     xi.scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist.cache(0)))
     xi.scrdist.append(gui.slider(frm, 1, 1000, xi.scrdist.cache(1)))
     frm.pack(anchor=tk.W)
@@ -934,19 +933,19 @@ def buildgui(opts):  # {{{1
     # page5 - Misc {{{2
     w = 13
     frm = draw.frame(page5)
-    gui.label3(frm, "Noise Cancel (x-y)", NProp2.noise_cancellation, width=w)
+    gui.label3(frm, "Noise Cancel (x-y)", NPropDb.noise_cancellation, width=w)
     xi.noise.append(gui.slider(frm, 1, 1000, xi.noise.cache(0)))
     xi.noise.append(gui.slider(frm, 1, 1000, xi.noise.cache(1)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
-    gui.label3(frm, "Move speed", NProp2.move_speed, width=w)
+    gui.label3(frm, "Move speed", NPropDb.move_speed, width=w)
     xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(0)))
     xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(1)))
     xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(2)))
     xi.movespd.append(gui.slider_flt(frm, 0, 10, xi.movespd.cache(3)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
-    gui.label3(frm, "Pressure Motion", NProp2.pressure_motion, width=w)
+    gui.label3(frm, "Pressure Motion", NPropDb.pressure_motion, width=w)
     xi.prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot.cache(0)))
     xi.prsmot.append(gui.slider(frm, 1, 1000, xi.prsmot.cache(1)))
     draw.label(frm, "Factor").pack(side=tk.LEFT)
@@ -954,24 +953,24 @@ def buildgui(opts):  # {{{1
     xi.prsfct.append(gui.slider_flt(frm, 1, 1000, xi.prsfct.cache(1)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
-    gui.label3(frm, "Coasting speed", NProp2.coasting_speed, width=w)
+    gui.label3(frm, "Coasting speed", NPropDb.coasting_speed, width=w)
     xi.cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd.cache(0)))
     xi.cstspd.append(gui.slider_flt(frm, 1, 1000, xi.cstspd.cache(1)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
-    gui.label3(frm, "Locked Drags", NProp2.locked_drags, width=w)
+    gui.label3(frm, "Locked Drags", NPropDb.locked_drags, width=w)
     xi.lckdrags.append(gui.checkbox(frm, "on", xi.lckdrags.cache(0)))
     draw.label(frm, "timeout").pack(side=tk.LEFT)
     xi.lckdrgto.append(gui.slider(frm, 1, 100000, xi.lckdrgto.cache(0)))
     xi.gestures.append(gui.checkbox(frm, "gesture", xi.gestures.cache(0)))
     frm.pack(anchor=tk.W)
     frm = draw.frame(page5)
-    gui.label3(frm, "Circular scrolling", NProp2.cirscr, width=w)
+    gui.label3(frm, "Circular scrolling", NPropDb.cirscr, width=w)
     xi.cirscr.append(gui.checkbox(frm, "on", xi.cirscr.cache(0)))
     xi.cirpad.append(gui.checkbox(frm, "Circular-pad", xi.cirpad.cache(0)))
-    gui.label3(frm, "  Distance", NProp2.cirdis)
+    gui.label3(frm, "  Distance", NPropDb.cirdis)
     xi.cirdis.append(gui.slider_flt(frm, 0.01, 100, xi.cirdis.cache(0)))
-    gui.label3(frm, "  Trigger", NProp2.cirtrg)
+    gui.label3(frm, "  Trigger", NPropDb.cirtrg)
     xi.cirtrg.append(gui.combobox(
         frm, ["0: All Edges", "1: Top Edge", "2: Top Right Corner",
               "3: Right Edge",
@@ -992,7 +991,7 @@ def buildgui(opts):  # {{{1
     frm = draw.frame(page6)
     draw.label(frm, "XInput2 Keywords", width=20).pack(side=tk.LEFT)
     txt = draw.text(frm, 3)
-    draw.text_insert(txt, tk.END, NProp2.textprops())
+    draw.text_insert(txt, tk.END, NPropDb.textprops())
     txt.pack(side=tk.LEFT, fill="both", expand=True)
     frm.pack(anchor=tk.W)
     frm = draw.frame(page6)
@@ -1108,8 +1107,7 @@ def main():  # {{{1
     # type: () -> int
     logging.basicConfig(format="%(levelname)-8s:%(asctime)s:%(message)s")
 
-    n_props = NProp2.auto_id()
-    NProp2.props_copy(NProp)
+    n_props = NPropDb.auto_id()
     global gui
     debg("fetch settings, options and arguments...")
     opts = options()

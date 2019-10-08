@@ -9,7 +9,7 @@ v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 from __future__ import print_function
-from logging import debug as debg, error as eror, info
+from logging import (debug as debg, error as eror, )
 
 from common import (Percent, )
 
@@ -326,10 +326,13 @@ class NProp(object):  # {{{1
     @classmethod  # props {{{1
     def props(cls):
         # type: () -> Iterator[Tuple[Text, 'NProp']]
+        n = 0
         for k, v in cls.__dict__.items():
             if not isinstance(v, NProp):
                 continue
+            n += 1
             yield (k, v)
+        assert n > 0, "use NPropDb.auto_id() before use NProp."
 
     @classmethod  # prop_get {{{1
     def prop_get(cls, n):
@@ -413,51 +416,6 @@ class NProp(object):  # {{{1
             if va != vb:
                 return False
         return True
-
-
-class NPropDb(Sized):  # {{{1
-    def __init__(self):  # {{{1
-        # type: () -> None
-        self.props = {"xinput": []}  # type: Dict[Text, List[NProp]]
-
-    def get(self, sec, prop, fallback=None):  # {{{1
-        # type: (Text, NProp, Optional[NProp]) -> NProp
-        if sec not in self.props:
-            pass
-        else:
-            seq = self.props[sec]
-            for i in seq:
-                if i.prop_id == prop.prop_id:
-                    return i
-        if fallback is not None:
-            return fallback
-        raise KeyError("invalid key '{}'".format(sec))
-
-    def put(self, sec, prop):  # {{{1
-        # type: (Text, NProp) -> None
-        try:
-            prop_cur = self.get(sec, prop)
-        except KeyError:
-            if sec not in self.props:
-                # TODO(shimoda): automatic section creations?
-                self.props[sec] = []
-            self.props[sec].append(prop)
-            return
-        prop_cur.update_by_prop(prop)
-
-    def __len__(self):  # {{{1
-        # type: () -> int
-        return len(self.props)
-
-    def items(self, sec):  # {{{1
-        # type: (Text) -> Iterable[Tuple[int, NProp]]
-        seq = self.props.get(sec, [])
-        for i in seq:
-            yield (i.prop_id, i)
-
-    def report(self):  # {{{1
-        # type: () -> None
-        info("db.report: sections: " + Text(self.props.keys()))
 
 
 # main {{{1

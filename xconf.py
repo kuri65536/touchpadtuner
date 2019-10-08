@@ -12,7 +12,8 @@ from __future__ import print_function
 from logging import info
 
 import common
-from xprops import NProp, NPropDb
+from xprops import NProp
+from xprops2 import NPropDb
 
 try:
     from typing import (Any, Callable, Dict, IO, Iterable, List, Optional,

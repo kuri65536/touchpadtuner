@@ -11,17 +11,60 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 from __future__ import print_function
 from logging import info, warning as warn
 import re
-from typing import Dict, Iterator, Optional, Text, Tuple, Type
+from typing import (Dict, Iterator, Iterable, List, Optional, Sized,
+                    Text, Tuple, Type, )
 # from logging import info
 
 import common
 from xprops import NProp, PropFormat
 
 
-Dict, Iterator, Optional, Text, Tuple, Type
+Dict, Iterator, Iterable, List, Optional, Text, Tuple, Type
 
 
-class NProp1804(NProp):  # {{{1
+class NPropDb(Sized):  # {{{1
+    def __init__(self):  # {{{1
+        # type: () -> None
+        self.props = {"xinput": []}  # type: Dict[Text, List[NProp]]
+
+    def get(self, sec, prop, fallback=None):  # {{{1
+        # type: (Text, NProp, Optional[NProp]) -> NProp
+        if sec not in self.props:
+            pass
+        else:
+            seq = self.props[sec]
+            for i in seq:
+                if i.prop_id == prop.prop_id:
+                    return i
+        if fallback is not None:
+            return fallback
+        raise KeyError("invalid key '{}'".format(sec))
+
+    def put(self, sec, prop):  # {{{1
+        # type: (Text, NProp) -> None
+        try:
+            prop_cur = self.get(sec, prop)
+        except KeyError:
+            if sec not in self.props:
+                # TODO(shimoda): automatic section creations?
+                self.props[sec] = []
+            self.props[sec].append(prop)
+            return
+        prop_cur.update_by_prop(prop)
+
+    def __len__(self):  # {{{1
+        # type: () -> int
+        return len(self.props)
+
+    def items(self, sec):  # {{{1
+        # type: (Text) -> Iterable[Tuple[int, NProp]]
+        seq = self.props.get(sec, [])
+        for i in seq:
+            yield (i.prop_id, i)
+
+    def report(self):  # {{{1
+        # type: () -> None
+        info("db.report: sections: " + Text(self.props.keys()))
     # {{{1
     # name and numbers {{{1
     device_enabled = NProp("Device Enabled", None, "")  # {{{1 (140):
@@ -619,11 +662,15 @@ class NProp1804(NProp):  # {{{1
         # type: (bool) -> int
         _id = cls.get_touchpad_id()
         cmd = ["xinput", "list-props", _id]
-        for p, v in cls.props():
+        for p, v in cls.__dict__.items():
+            if not isinstance(v, NProp):
+                continue
             v.prop_id = -1  # clear id
         ret = 0
         for line in common.check_output(cmd).splitlines():
-            for p, v in cls.props():
+            for p, v in cls.__dict__.items():
+                if not isinstance(v, NProp):
+                    continue
                 if v.key not in line:
                     continue
                 mo = re.search(r"([0-9]+)", line)
@@ -632,7 +679,7 @@ class NProp1804(NProp):  # {{{1
                 _id = mo.group(1)
                 v.prop_id = int(_id)
                 info("id:{:3} as {} - {}".format(_id, p, v.key))
-                num = NProp1804.parse_props(v, line, verbose)
+                num = cls.parse_props(v, line, verbose)
                 if num != len(v.vals):
                     warn("id:{:3}, {} - {}".format(_id, num, len(v.vals)))
                 ret += 1
@@ -640,16 +687,17 @@ class NProp1804(NProp):  # {{{1
             else:
                 if verbose:
                     print("???????:" + line)
+        cls.props_copy(NProp)
         if verbose:
-            for p, key in cls.props():
+            for p, key in NProp.props():
                 if key.prop_id > 0:
                     print("{:3} was loaded as {}".format(getattr(cls, p), p))
                 else:
                     print("{} was not found...".format(p))
         return ret
 
-    @classmethod
-    def parse_props(cls, self, src, verbose=False):  # {{{1
+    @classmethod  # parse_props {{{1
+    def parse_props(cls, self, src, verbose=False):
         # type: (NProp, Text, bool) -> int
         if len(self.fmts) < 1:
             return 0
@@ -689,11 +737,11 @@ class NProp1804(NProp):  # {{{1
 # main {{{1
 def main():  # {{{1
     # type: () -> int
-    _id = NProp1804.get_touchpad_id()
+    _id = NPropDb.get_touchpad_id()
     if _id != "":
         print("detected touchpad as id=" + _id)
         # os.system("xinput list-props " + _id)
-        NProp1804.auto_id(True)
+        NPropDb.auto_id(True)
     else:
         print("does not detected touchpad")
     return 0
