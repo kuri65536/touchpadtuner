@@ -677,8 +677,8 @@ class NProp1804(NProp):  # {{{1
             ret = ret[1:]
         return ret
 
-    @classmethod
-    def props_copy(cls, nprop):  # {{{1
+    @classmethod  # props_copy {{{1
+    def props_copy(cls, nprop):
         # type: (Type[NProp]) -> None
         for k, v in cls.__dict__.items():
             if not isinstance(v, NProp):

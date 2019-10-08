@@ -640,6 +640,13 @@ class Gui(object):  # {{{1
         sec = opts.xsection
         xf = XConfFile()
         db = xf.read(opts.fnameIn)
+        for name, p in NProp2.props():
+            try:
+                prop = db.get(sec, p)
+                prop.update_by_prop(p)
+            except KeyError:
+                # TODO(shimoda): check default...
+                db.put(sec, p)
         for n, p in xi.dumpdb().items(sec):
             try:
                 prop = db.get(sec, p)
@@ -1102,6 +1109,7 @@ def main():  # {{{1
     logging.basicConfig(format="%(levelname)-8s:%(asctime)s:%(message)s")
 
     n_props = NProp2.auto_id()
+    NProp2.props_copy(NProp)
     global gui
     debg("fetch settings, options and arguments...")
     opts = options()
