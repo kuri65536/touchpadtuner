@@ -1,7 +1,7 @@
 TouchPad(Synaptic) Tuning tool for Lxde
 ===============================================================================
 Sometime, I face the problem of TouchPad configuration in Lubuntu.
-My laptop have too sensitive TouchPad.
+My laptop have a too sensitive TouchPad.
 
 This tool configure the touchpad through xinput with GUI,
 and no need to gnome or another heavy environment/dependencies.
@@ -81,10 +81,14 @@ TODO
 -----------------------------------------
 - Write down or modify file: `/usr/share/X11/xorg.conf.d/70-synaptic.conf`,
     to make the changes to permanent.
-- Made GUI for some missing params. (
-    I solved the sensitive touchpad with FingerLow and FingerHigh parameters.
-    I don't use another params.
-    )
+- Made GUI for some missinL params. (
+    I solved the sensitive touchpad with below prameters,
+    and did not use another params.)
+
+    - FingerLow and FingerHigh
+    - PalmMinWidth(1000) and PalmMinZ(500)
+
+- xconf.save: implement `NProp.is_default()`
 - (my touchpad problem) Incorrect scroll up/down in typing.
 - (my touchpad problem) Syndaemon stop with two finger scroll.
 
@@ -96,7 +100,7 @@ Development Environment
 |:----:|:--------------|
 | OS   | Lubuntu 18.04 |
 | Xorg | 1.19.6        |
-| lang | Python 3.6.5, Python 2.7.15rc1  |
+| lang | Python 3.6.8, Python 2.7.15+ |
 | tool | xinput 1.6.2 (XI server 2.3) |
 | tool | tkinter       |
 
@@ -192,6 +196,15 @@ Release
 | 0.3.0   | show hint text in sample label |
 | 0.2.0   | append preview canvas |
 | 0.1.0   | 1st version |
+
+
+Donations
+---------------------
+If you are feel to nice for this software, please donation to my
+
+- Bitcoin **| 1FTBAUaVdeGG9EPsGMD5j2SW8QHNc5HzjT |**
+- Ether **| 0xd7Dc5cd13BD7636664D6bf0Ee8424CFaF6b2FA8f |**
+- or librapay, I'm glad from smaller (about $1) and welcome more :D
 
 <!--
 vi: ft=markdown:et:fdm=marker
